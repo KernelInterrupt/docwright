@@ -4,10 +4,16 @@ version = "0.1.0"
 description = "Playwright-like runtime for guided document reading and controlled document actions"
 requires-python = ">=3.10"
 readme = "README.md"
+license = {text = "Apache-2.0"}
 authors = [
   { name = "DocWright" }
 ]
 dependencies = []
+classifiers = [
+  "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+]
 
 [build-system]
 requires = ["setuptools>=68", "wheel"]

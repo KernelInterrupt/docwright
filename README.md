@@ -136,3 +136,8 @@ Optional packaged sample:
 ```python
 from docwright.codex.samples.attention_fixture import build_attention_fixture_entry
 ```
+
+
+## License
+
+Apache License 2.0. See `LICENSE`.
