@@ -39,7 +39,7 @@ Implemented baseline capabilities now include:
 - reference skill bundles for navigation, highlighting, warnings, and workspace editing
 - first `guided_reading` capability with strategy text stored outside Core modules
 - headless runner scaffold with single-step and run-until-complete support
-- Codex-compatible bridge scaffold with guidance export, a skill-aware tool registry, fake-driver smoke tests, a direct-library host helper, a launch-oriented Codex entry surface, external-host fixtures, observer hooks, and usage/trace hooks
+- Codex-compatible bridge scaffold with guidance export, a skill-aware tool registry, fake-driver smoke tests, a direct-library host helper, a launch-oriented Codex entry surface, an optional IR-fixture sample input, external-host fixtures, observer hooks, and usage/trace hooks
 - smoke, integration, lifecycle, and serialization tests
 
 It is still an **early but usable Core baseline**, not a finished product runtime.
@@ -105,6 +105,7 @@ Do **not** collapse these concepts back into one “agent profile” abstraction
 - `docs/codex_adapter_execution_checklist_v1.md`
 - `docs/codex_direct_library_integration_v1.md`
 - `codex_entry/README.md`
+- `codex_entry/samples/attention_fixture.py`
 
 ### Core/runtime modules now present
 - `src/docwright/core/models.py`
@@ -119,6 +120,7 @@ Do **not** collapse these concepts back into one “agent profile” abstraction
 - `src/docwright/protocol/schemas.py`
 - `src/docwright/document/interfaces.py`
 - `src/docwright/document/handles.py`
+- `src/docwright/document/ir_loader.py`
 - `src/docwright/adapters/agent/base.py`
 - `src/docwright/adapters/agent/codex.py`
 - `src/docwright/adapters/agent/codex_prompting.py`

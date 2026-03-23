@@ -95,6 +95,7 @@ This repository does **not** aim to own:
 - `docs/codex_adapter_execution_checklist_v1.md`
 - `docs/codex_direct_library_integration_v1.md`
 - `codex_entry/README.md`
+- `codex_entry/samples/attention_fixture.py`
 
 ## Working rule
 

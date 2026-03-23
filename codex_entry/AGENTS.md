@@ -42,3 +42,6 @@ Do not reintroduce provider-specific client logic into Core.
 Use these fixtures as stable external-host baselines:
 - `../tests/fixtures/codex/guided_reading_step_contract.json`
 - `../tests/fixtures/codex/manual_task_navigation_transcript.json`
+
+## Optional fixture sample
+Use `samples/attention_fixture.py` if you want a ready-made demo input from the prepared Document IR fixture. This is optional and must not replace the generic `DocWrightCodexEntry.from_document(...)` path.

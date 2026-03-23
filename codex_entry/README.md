@@ -34,3 +34,6 @@ This is the shortest setup path to:
 - `../docs/codex_direct_library_integration_v1.md`
 - `../docs/codex_adapter_design_v1.md`
 - `../docs/codex_adapter_execution_checklist_v1.md`
+
+## Optional fixture sample
+Use `samples/attention_fixture.py` if you want a ready-made demo input from the prepared Document IR fixture. This is optional and must not replace the generic `DocWrightCodexEntry.from_document(...)` path.

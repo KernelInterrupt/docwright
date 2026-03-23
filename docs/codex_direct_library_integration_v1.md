@@ -61,6 +61,12 @@ Launch-oriented setup helper in:
 This is the shortest bootstrap path when a host wants to create a fresh
 `RuntimeSession` directly from a `DocumentHandle`.
 
+There is also an optional repo-local sample at:
+- `../codex_entry/samples/attention_fixture.py`
+
+That sample loads the prepared Document IR fixture for demos only; it is not the
+main integration contract.
+
 ---
 
 ## 3. Host-side flow
