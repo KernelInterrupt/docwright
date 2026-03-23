@@ -1,0 +1,23 @@
+[project]
+name = "docwright-core"
+version = "0.1.0"
+description = "Playwright-like runtime for guided document reading and controlled document actions"
+requires-python = ">=3.11"
+readme = "README.md"
+authors = [
+  { name = "DocWright" }
+]
+dependencies = []
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100

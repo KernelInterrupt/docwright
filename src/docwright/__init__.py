@@ -1,0 +1,1 @@
+"""DocWright core package scaffold."""

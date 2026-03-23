@@ -1,0 +1,282 @@
+{
+  "contract": {
+    "instructions": "You are a Codex-side agent operating DocWright through tools.\n\nUse the provided tools to inspect runtime state and perform document actions.\n\nDo not invent document structure, workspace contents, or step state.\n\nActive capability: manual_task - Manual document task mode with relaxed runtime guardrails.\n\nGuardrails: max 1 workspace open per step\n\nActive skill bundles:\n- navigation: current_node, get_context, advance\n- highlighting: highlight\n- warnings: warning\n- workspace_editing: open_workspace, read_body, write_body, patch_body, compile, submit\n\nRuntime identifiers: session=session-1, run=run-1.\n\nWork one DocWright step at a time. Prefer structured tool calls over free-form explanation.",
+    "turn_prompt": "Run one DocWright step for session session-1.\nCurrent node: node-1 (paragraph) on page 1.\nNode text preview: alpha\nLocal context -> before: <none>; after: node-2.",
+    "tools": [
+      {
+        "name": "current_node",
+        "description": "Inspect the current DocWright node before taking any action.",
+        "input_schema": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "get_context",
+        "description": "Read nearby node IDs around the current node to understand local context.",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "before": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 1
+            },
+            "after": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 1
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "advance",
+        "description": "Move to the next node in reading order after satisfying runtime guardrails.",
+        "input_schema": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "highlight",
+        "description": "Mark the current node with a structured highlight level and optional reason.",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "level": {
+              "type": "string"
+            },
+            "reason": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "level"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "warning",
+        "description": "Raise a structured warning with severity, message, and supporting evidence.",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string"
+            },
+            "severity": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "evidence": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "kind",
+            "severity",
+            "message"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "open_workspace",
+        "description": "Open a controlled editing workspace anchored to the current node.",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "task": {
+              "type": "string"
+            },
+            "capability": {
+              "type": "string"
+            },
+            "language": {
+              "type": "string"
+            },
+            "initial_body": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "task"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "read_body",
+        "description": "Read the editable workspace body before making changes.",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "workspace_id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "workspace_id"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "write_body",
+        "description": "Replace the editable workspace body with new content.",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "workspace_id": {
+              "type": "string"
+            },
+            "content": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "workspace_id",
+            "content"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "patch_body",
+        "description": "Apply a targeted string replacement inside the editable workspace body.",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "workspace_id": {
+              "type": "string"
+            },
+            "old": {
+              "type": "string"
+            },
+            "new": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "workspace_id",
+            "old",
+            "new"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "compile",
+        "description": "Compile the workspace body and return structured success or error details.",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "workspace_id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "workspace_id"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "submit",
+        "description": "Submit the workspace after a successful compile completes.",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "workspace_id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "workspace_id"
+          ],
+          "additionalProperties": false
+        }
+      }
+    ],
+    "metadata": {
+      "session_id": "session-1",
+      "run_id": "run-1",
+      "capability": "manual_task",
+      "adapter": "codex"
+    }
+  },
+  "tool_calls": [
+    {
+      "call_id": "call-1",
+      "name": "current_node",
+      "arguments": {}
+    },
+    {
+      "call_id": "call-2",
+      "name": "get_context",
+      "arguments": {
+        "before": 1,
+        "after": 1
+      }
+    },
+    {
+      "call_id": "call-3",
+      "name": "advance",
+      "arguments": {}
+    }
+  ],
+  "tool_results": [
+    {
+      "call_id": "call-1",
+      "name": "current_node",
+      "output": {
+        "node": {
+          "node_id": "node-1",
+          "kind": "paragraph",
+          "page_number": 1,
+          "text": "alpha",
+          "relations": []
+        }
+      }
+    },
+    {
+      "call_id": "call-2",
+      "name": "get_context",
+      "output": {
+        "focus_node_id": "node-1",
+        "before_node_ids": [],
+        "after_node_ids": [
+          "node-2"
+        ]
+      }
+    },
+    {
+      "call_id": "call-3",
+      "name": "advance",
+      "output": {
+        "status": "active",
+        "node": {
+          "node_id": "node-2",
+          "kind": "paragraph",
+          "page_number": 1,
+          "text": "beta",
+          "relations": []
+        }
+      }
+    }
+  ],
+  "output": {
+    "output_text": "Step complete.",
+    "stop_reason": "done"
+  }
+}
