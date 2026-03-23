@@ -56,13 +56,13 @@ and exposes a direct-library host flow.
 
 ### `DocWrightCodexEntry`
 Launch-oriented setup helper in:
-- `src/docwright/adapters/transport/codex_entry.py`
+- `src/docwright/codex/entry.py`
 
 This is the shortest bootstrap path when a host wants to create a fresh
 `RuntimeSession` directly from a `DocumentHandle`.
 
 There is also an optional repo-local sample at:
-- `../codex_entry/samples/attention_fixture.py`
+- `src/docwright/codex/samples/attention_fixture.py`
 
 That sample loads the prepared Document IR fixture for demos only; it is not the
 main integration contract.
@@ -75,7 +75,7 @@ A minimal host loop is:
 
 1. create a `RuntimeSession`
 2. choose a `CapabilityProfile`
-3. create `DocWrightCodexEntry.from_document(...)` or `CodexLibraryBridge(...)`
+3. import `DocWrightCodexEntry` from `docwright.codex.entry` and create `DocWrightCodexEntry.from_document(...)` or `CodexLibraryBridge(...)`
 4. call `export_step()`
 5. give Codex:
    - `instructions`

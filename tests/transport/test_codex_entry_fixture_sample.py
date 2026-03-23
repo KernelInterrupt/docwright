@@ -1,14 +1,8 @@
-from pathlib import Path
-import runpy
-
 from docwright.adapters.agent.codex_types import CodexToolCall
 from docwright.capabilities.guided_reading import GuidedReadingCapability
 from docwright.capabilities.manual_task import ManualTaskCapability
 
-SAMPLE_PATH = Path(__file__).resolve().parents[2] / "codex_entry" / "samples" / "attention_fixture.py"
-MODULE = runpy.run_path(str(SAMPLE_PATH))
-FIXTURE_PATH = MODULE["FIXTURE_PATH"]
-build_attention_fixture_entry = MODULE["build_attention_fixture_entry"]
+from docwright.codex.samples.attention_fixture import FIXTURE_PATH, build_attention_fixture_entry
 
 
 def test_attention_fixture_sample_builds_optional_entry_without_binding_main_bridge() -> None:

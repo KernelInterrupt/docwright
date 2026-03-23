@@ -4,7 +4,7 @@ DocWright is a Playwright-like runtime for guided document reading and controlle
 
 It is **not** a chatbot and **not** a one-shot summarizer.
 
-The current goal of this repository is to provide the standalone **DocWright Core** layer:
+The current goal of this repository is to provide the standalone **DocWright Core** layer as an installable Python package:
 - stable document-facing runtime API
 - workspace/session API for controlled editing
 - runtime guardrails and event model
@@ -51,6 +51,17 @@ skill/tool bundles   -> highlighting, workspace editing, research, warnings, ...
 docwright-app        -> UI / frontend / intervention loop
 ```
 
+
+## Install
+
+For local development or Codex integration, install the package in editable mode:
+
+```bash
+pip install -e .
+```
+
+The package now targets Python 3.10+.
+
 ## What is implemented now
 
 This repository now contains a **self-contained Core milestone** with:
@@ -94,8 +105,8 @@ This repository does **not** aim to own:
 - `docs/codex_adapter_design_v1.md`
 - `docs/codex_adapter_execution_checklist_v1.md`
 - `docs/codex_direct_library_integration_v1.md`
-- `codex_entry/README.md`
-- `codex_entry/samples/attention_fixture.py`
+- `src/docwright/codex/entry.py`
+- `src/docwright/codex/samples/attention_fixture.py`
 
 ## Working rule
 
@@ -110,3 +121,18 @@ When continuing work in this repo after context compression, always read these i
 
 The R1-R8 execution checklist is complete. The repository is now a tested,
 minimal working Core runtime baseline rather than a contracts-only scaffold.
+
+
+## Codex package entry
+
+After installation, the recommended entry surface is:
+
+```python
+from docwright.codex.entry import DocWrightCodexEntry
+```
+
+Optional packaged sample:
+
+```python
+from docwright.codex.samples.attention_fixture import build_attention_fixture_entry
+```

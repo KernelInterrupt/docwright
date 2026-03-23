@@ -86,6 +86,7 @@ Do **not** collapse these concepts back into one “agent profile” abstraction
 ### Top-level files
 - `README.md`
 - `pyproject.toml`
+- `setup.py`
 - `.gitignore`
 
 ### Docs already present
@@ -104,8 +105,8 @@ Do **not** collapse these concepts back into one “agent profile” abstraction
 - `docs/codex_adapter_design_v1.md`
 - `docs/codex_adapter_execution_checklist_v1.md`
 - `docs/codex_direct_library_integration_v1.md`
-- `codex_entry/README.md`
-- `codex_entry/samples/attention_fixture.py`
+- `src/docwright/codex/entry.py`
+- `src/docwright/codex/samples/attention_fixture.py`
 
 ### Core/runtime modules now present
 - `src/docwright/core/models.py`
@@ -128,7 +129,7 @@ Do **not** collapse these concepts back into one “agent profile” abstraction
 - `src/docwright/adapters/agent/codex_types.py`
 - `src/docwright/adapters/transport/headless.py`
 - `src/docwright/adapters/transport/codex_library.py`
-- `src/docwright/adapters/transport/codex_entry.py`
+- `src/docwright/codex/entry.py`
 - `src/docwright/adapters/transport/codex_exports.py`
 - `src/docwright/capabilities/base.py`
 - `src/docwright/capabilities/guided_reading.py`

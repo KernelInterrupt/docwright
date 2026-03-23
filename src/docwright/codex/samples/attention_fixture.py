@@ -1,18 +1,19 @@
-"""Optional sample using the prepared Attention document IR fixture.
+"""Optional packaged sample using the prepared Attention document IR fixture.
 
-This sample is intentionally separate from the main bridge so the Codex entry
-surface stays generic. It is only a convenience helper for demos and tests.
+This sample is intentionally separate from the main bridge so the primary
+DocWright package entry stays generic. It is only a convenience helper for
+demos and tests.
 """
 
 from __future__ import annotations
 
 from pathlib import Path
 
-from docwright.adapters.transport.codex_entry import DocWrightCodexEntry
+from docwright.codex.entry import DocWrightCodexEntry
 from docwright.document.ir_loader import load_in_memory_document_from_ir_path
 
 FIXTURE_PATH = (
-    Path(__file__).resolve().parents[2]
+    Path(__file__).resolve().parents[4]
     / "tests"
     / "fixtures"
     / "document_ir"

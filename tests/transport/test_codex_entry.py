@@ -1,7 +1,7 @@
 import pytest
 
 from docwright.adapters.agent.codex_types import CodexToolCall
-from docwright.adapters.transport.codex_entry import DocWrightCodexEntry
+from docwright.codex.entry import DocWrightCodexEntry
 from docwright.capabilities.guided_reading import GuidedReadingCapability
 from docwright.capabilities.manual_task import ManualTaskCapability
 from docwright.core.guardrails import GuardrailViolationError
