@@ -29,6 +29,22 @@ This is analogous to how an agent host uses Playwright as a library.
 
 ---
 
+## 1.5 Installation expectation
+
+The intended host experience should be close to other installable automation libraries such as Playwright:
+
+```bash
+pip install -e .
+```
+
+Then import the entry surface through the installed package:
+
+```python
+from docwright.codex.entry import DocWrightCodexEntry
+```
+
+---
+
 ## 2. Current public bridge surface
 
 ### `CodexAdapter`
@@ -58,10 +74,10 @@ and exposes a direct-library host flow.
 Launch-oriented setup helper in:
 - `src/docwright/codex/entry.py`
 
-This is the shortest bootstrap path when a host wants to create a fresh
+This is the shortest installed bootstrap path when a host wants to create a fresh
 `RuntimeSession` directly from a `DocumentHandle`.
 
-There is also an optional repo-local sample at:
+There is also an optional packaged sample at:
 - `src/docwright/codex/samples/attention_fixture.py`
 
 That sample loads the prepared Document IR fixture for demos only; it is not the
@@ -75,7 +91,8 @@ A minimal host loop is:
 
 1. create a `RuntimeSession`
 2. choose a `CapabilityProfile`
-3. import `DocWrightCodexEntry` from `docwright.codex.entry` and create `DocWrightCodexEntry.from_document(...)` or `CodexLibraryBridge(...)`
+3. import `DocWrightCodexEntry` from `docwright.codex.entry` and create `DocWrightCodexEntry.from_document(...)`
+   (or drop to `CodexLibraryBridge(...)` only when you already own the runtime session)
 4. call `export_step()`
 5. give Codex:
    - `instructions`

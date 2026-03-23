@@ -54,13 +54,37 @@ docwright-app        -> UI / frontend / intervention loop
 
 ## Install
 
-For local development or Codex integration, install the package in editable mode:
+DocWright is now an **installable Python package** targeting **Python 3.10+**.
+
+For local development or Codex integration:
 
 ```bash
 pip install -e .
 ```
 
-The package now targets Python 3.10+.
+## Quick start
+
+Primary installed entry surface:
+
+```python
+from docwright.codex.entry import DocWrightCodexEntry
+```
+
+Optional packaged sample based on the prepared Attention IR fixture:
+
+```python
+from docwright.codex.samples.attention_fixture import build_attention_fixture_entry
+from docwright.capabilities.manual_task import ManualTaskCapability
+
+entry = build_attention_fixture_entry(capability=ManualTaskCapability())
+contract = entry.export_step()
+```
+
+The sample helper is only for demo/test convenience. The main integration contract remains:
+
+```python
+DocWrightCodexEntry.from_document(document, ...)
+```
 
 ## What is implemented now
 
@@ -122,20 +146,6 @@ When continuing work in this repo after context compression, always read these i
 The R1-R8 execution checklist is complete. The repository is now a tested,
 minimal working Core runtime baseline rather than a contracts-only scaffold.
 
-
-## Codex package entry
-
-After installation, the recommended entry surface is:
-
-```python
-from docwright.codex.entry import DocWrightCodexEntry
-```
-
-Optional packaged sample:
-
-```python
-from docwright.codex.samples.attention_fixture import build_attention_fixture_entry
-```
 
 
 ## License

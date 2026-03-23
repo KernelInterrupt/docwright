@@ -25,7 +25,7 @@ Its purpose is to rebuild the core architecture cleanly around:
 
 ## 2. Current reality
 
-This repo now contains a **self-contained Core milestone**, not just a contracts-first skeleton.
+This repo now contains a **self-contained Core milestone** as an installable Python package, not just a contracts-first skeleton.
 
 Implemented baseline capabilities now include:
 - runtime sessions with current-node, context, highlight, warning, open-workspace, and advance actions
@@ -39,7 +39,7 @@ Implemented baseline capabilities now include:
 - reference skill bundles for navigation, highlighting, warnings, and workspace editing
 - first `guided_reading` capability with strategy text stored outside Core modules
 - headless runner scaffold with single-step and run-until-complete support
-- Codex-compatible bridge scaffold with guidance export, a skill-aware tool registry, fake-driver smoke tests, a direct-library host helper, a launch-oriented Codex entry surface, an optional IR-fixture sample input, external-host fixtures, observer hooks, and usage/trace hooks
+- Codex-compatible bridge scaffold with guidance export, a skill-aware tool registry, fake-driver smoke tests, a direct-library host helper, an installable Codex package entry surface, an optional IR-fixture sample input, external-host fixtures, observer hooks, and usage/trace hooks
 - smoke, integration, lifecycle, and serialization tests
 
 It is still an **early but usable Core baseline**, not a finished product runtime.
@@ -198,6 +198,19 @@ Still intentionally incomplete / future work:
 - full parser/document package split
 - richer production compiler backends migrated from the prototype
 - broader capability catalog beyond the current guided-reading/manual-task baseline
+
+---
+
+## 6.5 Package install shape
+
+DocWright is now packaged as an installable Python package.
+
+Recommended installed imports:
+- `from docwright.codex.entry import DocWrightCodexEntry`
+- `from docwright.codex.samples.attention_fixture import build_attention_fixture_entry` (optional sample only)
+
+The sample helper must remain optional; the stable integration contract is still
+`DocWrightCodexEntry.from_document(...)`.
 
 ---
 
