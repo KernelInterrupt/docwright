@@ -10,6 +10,7 @@ from docwright.adapters.agent.codex_types import CodexToolCall, CodexToolResult,
 if TYPE_CHECKING:
     from docwright.capabilities.base import CapabilityProfile
     from docwright.core.session import RuntimeSession
+    from docwright.document.interfaces import TextSearchHit
     from docwright.workspace.models import CompileError, CompileResult
     from docwright.workspace.session import WorkspaceSession
 
@@ -85,6 +86,21 @@ class CodexToolRegistry:
                     "before": {"type": "integer", "minimum": 0, "default": 1},
                     "after": {"type": "integer", "minimum": 0, "default": 1},
                 },
+                "additionalProperties": False,
+            },
+        )
+
+    def _spec_search_text(self) -> CodexToolSpec:
+        return CodexToolSpec(
+            name="search_text",
+            description="Search runtime-visible document text and return matching nodes.",
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string"},
+                    "limit": {"type": "integer", "minimum": 1, "default": 10},
+                },
+                "required": ["query"],
                 "additionalProperties": False,
             },
         )
@@ -237,6 +253,13 @@ class CodexToolRegistry:
             "after_node_ids": list(context.after_node_ids),
         }
 
+    def _handle_search_text(self, *, session: RuntimeSession, capability: CapabilityProfile | None, arguments: dict[str, Any]) -> dict[str, Any]:
+        hits = session.search_text(arguments["query"], limit=int(arguments.get("limit", 10)))
+        return {
+            "query": arguments["query"],
+            "hits": [self._serialize_search_hit(hit) for hit in hits],
+        }
+
     def _handle_highlight(self, *, session: RuntimeSession, capability: CapabilityProfile | None, arguments: dict[str, Any]) -> dict[str, Any]:
         event = session.record_highlight(level=arguments["level"], reason=arguments.get("reason"))
         return {"event": event.as_protocol_event().as_dict()}
@@ -326,6 +349,14 @@ class CodexToolRegistry:
 
     def _serialize_workspace(self, workspace: WorkspaceSession) -> dict[str, Any]:
         return workspace.describe()
+
+    def _serialize_search_hit(self, hit: TextSearchHit) -> dict[str, Any]:
+        return {
+            "node_id": hit.node_id,
+            "page_number": hit.page_number,
+            "text_preview": hit.text_preview,
+            "match_count": hit.match_count,
+        }
 
     def _serialize_compile_result(self, result: CompileResult) -> dict[str, Any]:
         return {

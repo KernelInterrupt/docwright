@@ -30,6 +30,16 @@ class NodeContextSlice:
     after_node_ids: tuple[str, ...] = field(default_factory=tuple)
 
 
+@dataclass(slots=True, frozen=True)
+class TextSearchHit:
+    """Structured keyword-search result over runtime-visible document nodes."""
+
+    node_id: str
+    page_number: int
+    text_preview: str
+    match_count: int = 1
+
+
 @runtime_checkable
 class DocumentHandle(Protocol):
     """Core-facing document handle protocol."""

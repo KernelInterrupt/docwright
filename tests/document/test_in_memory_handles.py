@@ -35,3 +35,20 @@ def test_in_memory_page_restricts_lookup_to_its_nodes() -> None:
     page = document.get_page(1)
 
     assert page.get_node("node-1").node_id == "node-1"
+
+
+def test_in_memory_document_supports_keyword_search() -> None:
+    document = InMemoryDocument.from_nodes(
+        document_id="doc-1",
+        nodes=[
+            InMemoryNode(node_id="node-1", kind="paragraph", page_number=1, text="alpha beta alpha"),
+            InMemoryNode(node_id="node-2", kind="paragraph", page_number=2, text="gamma"),
+        ],
+    )
+
+    hits = document.search_text("alpha")
+
+    assert len(hits) == 1
+    assert hits[0].node_id == "node-1"
+    assert hits[0].page_number == 1
+    assert hits[0].match_count == 2

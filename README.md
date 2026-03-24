@@ -147,7 +147,7 @@ DocWrightCodexEntry.from_document(document, ...)
 ## What is implemented right now
 
 Current baseline includes:
-- runtime sessions with current-node, context, highlight, warning, open-workspace, and advance actions
+- runtime sessions with current-node, context, keyword search, highlight, warning, open-workspace, and advance actions
 - action-capable runtime node views over document handles
 - workspace sessions with read/write/patch/compile/submit lifecycle
 - declarative workspace template/profile/registry skeleton

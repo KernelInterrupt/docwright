@@ -15,7 +15,7 @@ from docwright.core.guardrails import (
     RuntimePermissions,
 )
 from docwright.core.models import RuntimeSessionModel, RuntimeSessionStatus
-from docwright.document.interfaces import DocumentHandle, NodeContextSlice, NodeRelationRef
+from docwright.document.interfaces import DocumentHandle, NodeContextSlice, NodeRelationRef, TextSearchHit
 from docwright.protocol.events import EventFamily, EventName
 from docwright.workspace.compiler import WorkspaceCompiler
 from docwright.workspace.models import EditableRegion, WorkspaceSessionModel
@@ -201,6 +201,43 @@ class RuntimeSession:
             before_node_ids=tuple(reading_order[max(0, index - before) : index]),
             after_node_ids=tuple(reading_order[index + 1 : index + 1 + after]),
         )
+
+    def search_text(self, query: str, *, limit: int = 10) -> tuple[TextSearchHit, ...]:
+        """Search runtime-visible IR-backed content by keyword.
+
+        This is a runtime query surface. The runtime may internally reuse helper
+        methods exposed by the backing document object, but the public contract
+        remains owned by ``RuntimeSession`` rather than the document layer.
+        """
+
+        query = query.strip()
+        if not query or limit < 1:
+            return ()
+
+        backend_search_text = getattr(self._document, "search_text", None)
+        if callable(backend_search_text):
+            return tuple(backend_search_text(query, limit=limit))
+
+        needle = query.casefold()
+        hits: list[TextSearchHit] = []
+        for node_id in self._get_reading_order():
+            node = self._get_node(node_id)
+            text_getter = getattr(node, "text_content", None)
+            text = text_getter() if callable(text_getter) else None
+            haystack = (text or "").casefold()
+            if not haystack or needle not in haystack:
+                continue
+            hits.append(
+                TextSearchHit(
+                    node_id=getattr(node, "node_id"),
+                    page_number=getattr(node, "page_number", 1),
+                    text_preview=(text or "")[:240],
+                    match_count=haystack.count(needle),
+                )
+            )
+            if len(hits) >= limit:
+                break
+        return tuple(hits)
 
     def record_highlight(self, *, level: str, reason: str | None = None) -> RuntimeEventEnvelope:
         self._permissions.ensure_allowed("highlight")

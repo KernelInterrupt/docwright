@@ -12,7 +12,7 @@ from docwright.document.facade import (
     ir_converter,
 )
 from docwright.document.handles import InMemoryDocument, InMemoryNode
-from docwright.document.interfaces import DocumentHandle, NodeContextSlice, NodeHandle, NodeRelationRef, PageHandle
+from docwright.document.interfaces import DocumentHandle, NodeContextSlice, NodeHandle, NodeRelationRef, PageHandle, TextSearchHit
 from docwright.document.ir_loader import in_memory_document_from_ir, load_in_memory_document_from_ir_path
 
 __all__ = [
@@ -24,6 +24,7 @@ __all__ = [
     "NodeHandle",
     "NodeRelationRef",
     "PageHandle",
+    "TextSearchHit",
     "document_backend_available",
     "document_backend_status",
     "in_memory_document_from_ir",

@@ -28,7 +28,7 @@ Its purpose is to rebuild the core architecture cleanly around:
 This repo now contains a **self-contained Core milestone** as an installable Python package with a unified `docwright` facade, not just a contracts-first skeleton.
 
 Implemented baseline capabilities now include:
-- runtime sessions with current-node, context, highlight, warning, open-workspace, and advance actions
+- runtime sessions with current-node, context, keyword search, highlight, warning, open-workspace, and advance actions
 - action-capable runtime node views over document handles
 - Core event envelopes and guardrail enforcement
 - workspace sessions with read/write/patch/compile/submit lifecycle
@@ -178,7 +178,7 @@ The following architectural decisions are already made and should be treated as 
 
 The following are now implemented as part of the current Core baseline:
 - runtime session/state models
-- current-node and local-context queries
+- current-node, local-context, and keyword-search queries
 - action-capable node views for highlight / warning / open workspace
 - runtime event envelopes and run/session payload schemas
 - runtime permissions and guardrail policies

@@ -54,7 +54,7 @@ def test_codex_library_bridge_exports_current_step_and_tool_names() -> None:
 
     assert "Current node: node-1" in contract.turn_prompt
     assert contract.metadata["session_id"] == "session-1"
-    assert bridge.available_tool_names()[:3] == ("current_node", "get_context", "advance")
+    assert bridge.available_tool_names()[:4] == ("current_node", "get_context", "search_text", "advance")
 
 
 def test_codex_library_bridge_executes_tools_and_refreshes_step_contract() -> None:

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from docwright.document.interfaces import NodeContextSlice, NodeRelationRef
+from docwright.document.interfaces import NodeContextSlice, NodeRelationRef, TextSearchHit
 
 
 @dataclass(slots=True, frozen=True)
@@ -83,3 +83,32 @@ class InMemoryDocument:
             before_node_ids=tuple(before_node_ids),
             after_node_ids=tuple(after_node_ids),
         )
+
+    def search_text(self, query: str, *, limit: int = 10) -> tuple[TextSearchHit, ...]:
+        """Helper search implementation over this in-memory IR-backed document.
+
+        Runtime owns the public search contract; this method merely provides a
+        concrete implementation that ``RuntimeSession.search_text(...)`` may use.
+        """
+
+        needle = query.strip().casefold()
+        if not needle:
+            return ()
+
+        hits: list[TextSearchHit] = []
+        for node_id in self.reading_order:
+            node = self.nodes[node_id]
+            haystack = (node.text or "").casefold()
+            if not haystack or needle not in haystack:
+                continue
+            hits.append(
+                TextSearchHit(
+                    node_id=node.node_id,
+                    page_number=node.page_number,
+                    text_preview=(node.text or "")[:240],
+                    match_count=haystack.count(needle),
+                )
+            )
+            if len(hits) >= limit:
+                break
+        return tuple(hits)

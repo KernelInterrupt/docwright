@@ -368,3 +368,15 @@ def test_runtime_session_open_workspace_rejects_task_profile_mismatch() -> None:
 
     with pytest.raises(ValueError, match="requires task"):
         session.open_workspace(task="review", workspace_profile="latex_annotation")
+
+
+def test_runtime_session_search_text_falls_back_to_runtime_visible_nodes() -> None:
+    session = RuntimeSession(
+        RuntimeSessionModel(session_id="session-1", run_id="run-1", document_id="doc-1"),
+        document=DummyDocument(),
+    )
+
+    hits = session.search_text("text for node", limit=5)
+
+    assert [hit.node_id for hit in hits] == ["node-1", "node-2"]
+    assert hits[0].match_count == 1

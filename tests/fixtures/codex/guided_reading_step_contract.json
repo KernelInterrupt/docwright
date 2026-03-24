@@ -1,5 +1,5 @@
 {
-  "instructions": "You are a Codex-side agent operating DocWright through tools.\n\nUse the provided tools to inspect runtime state and perform document actions.\n\nDo not invent document structure, workspace contents, or step state.\n\nActive capability: guided_reading - Structured guided-reading workflow\n\nGuardrails: highlight is required before advance, max 1 workspace open per step\n\nActive skill bundles:\n- navigation: current_node, get_context, advance\n- highlighting: highlight\n- warnings: warning\n- workspace_editing: open_workspace, describe_workspace, read_body, write_body, patch_body, compile, submit\n\nCapability strategy:\n# Guided Reading Strategy\n\n- Read the current node in reading order.\n- Apply a highlight before advancing.\n- Open at most one workspace per step when a controlled edit is needed.\n- Prefer evidence-preserving warnings over freeform speculation.\n\nRuntime identifiers: session=session-1, run=run-1.\n\nWork one DocWright step at a time. Prefer structured tool calls over free-form explanation.",
+  "instructions": "You are a Codex-side agent operating DocWright through tools.\n\nUse the provided tools to inspect runtime state and perform document actions.\n\nDo not invent document structure, workspace contents, or step state.\n\nActive capability: guided_reading - Structured guided-reading workflow\n\nGuardrails: highlight is required before advance, max 1 workspace open per step\n\nActive skill bundles:\n- navigation: current_node, get_context, search_text, advance\n- highlighting: highlight\n- warnings: warning\n- workspace_editing: open_workspace, describe_workspace, read_body, write_body, patch_body, compile, submit\n\nCapability strategy:\n# Guided Reading Strategy\n\n- Read the current node in reading order.\n- Apply a highlight before advancing.\n- Open at most one workspace per step when a controlled edit is needed.\n- Prefer evidence-preserving warnings over freeform speculation.\n\nRuntime identifiers: session=session-1, run=run-1.\n\nWork one DocWright step at a time. Prefer structured tool calls over free-form explanation.",
   "turn_prompt": "Run one DocWright step for session session-1.\nCurrent node: node-1 (paragraph) on page 1.\nNode text preview: alpha\nLocal context -> before: <none>; after: node-2.",
   "tools": [
     {
@@ -28,6 +28,27 @@
             "default": 1
           }
         },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "search_text",
+      "description": "Search runtime-visible document text by keyword before navigating manually.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "default": 10
+          }
+        },
+        "required": [
+          "query"
+        ],
         "additionalProperties": false
       }
     },

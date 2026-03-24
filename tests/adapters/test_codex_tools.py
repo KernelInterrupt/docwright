@@ -77,6 +77,7 @@ def test_tool_registry_filters_tools_from_active_skills() -> None:
     assert names == [
         "current_node",
         "get_context",
+        "search_text",
         "advance",
         "highlight",
         "warning",
@@ -103,6 +104,11 @@ def test_tool_registry_executes_runtime_and_workspace_tools() -> None:
         session=session,
         capability=capability,
         call=CodexToolCall(call_id="1", name="current_node"),
+    )
+    searched = registry.execute_tool(
+        session=session,
+        capability=capability,
+        call=CodexToolCall(call_id="1b", name="search_text", arguments={"query": "alpha", "limit": 5}),
     )
     highlighted = registry.execute_tool(
         session=session,
@@ -142,6 +148,7 @@ def test_tool_registry_executes_runtime_and_workspace_tools() -> None:
     )
 
     assert current.output["node"]["node_id"] == "node-1"
+    assert [hit["node_id"] for hit in searched.output["hits"]] == ["node-1"]
     assert highlighted.output["event"]["name"] == "highlight.applied"
     assert opened.output["workspace"]["workspace_profile"] == "latex_annotation"
     assert opened.output["workspace"]["template_id"] == "default_annotation_tex"
