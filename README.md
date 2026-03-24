@@ -154,6 +154,7 @@ Current baseline includes:
 - runtime-level workspace profile/template resolution with structured workspace metadata
 - structured workspace description via `describe_workspace`
 - transport-neutral protocol commands, events, and serialization helpers
+- minimal render protocol for externally visible agent tool-call traces
 - document interfaces plus in-memory document handles
 - lightweight in-repo IR loader
 - lazy `docwright.document` facade for optional external document backends

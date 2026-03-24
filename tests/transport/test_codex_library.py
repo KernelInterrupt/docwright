@@ -182,3 +182,42 @@ def test_codex_library_bridge_tracks_usage_and_trace_records() -> None:
     assert traces.records[0].session_id == "session-1"
     assert traces.records[0].run_id == "run-1"
     assert traces.records[1].payload["text_delta"] == "abc"
+
+
+def test_codex_library_bridge_exposes_render_trace_for_completed_tool_calls() -> None:
+    bridge = CodexLibraryBridge(session=make_session(), capability=ManualTaskCapability())
+
+    bridge.execute_tool_call(CodexToolCall(call_id="1", name="current_node"))
+    bridge.execute_tool_call(CodexToolCall(call_id="2", name="advance"))
+
+    render_trace = bridge.render_trace()
+
+    assert render_trace.adapter == "codex"
+    assert render_trace.session_id == "session-1"
+    assert [op.tool_name for op in render_trace.operations] == ["current_node", "advance"]
+    assert render_trace.operations[0].status == "completed"
+    assert render_trace.operations[1].output["node"]["node_id"] == "node-2"
+
+
+def test_codex_library_bridge_records_failed_tool_calls_in_render_trace() -> None:
+    guarded_session = RuntimeSession(
+        RuntimeSessionModel(session_id="session-1", run_id="run-1", document_id="doc-1"),
+        document=InMemoryDocument.from_nodes(
+            document_id="doc-1",
+            nodes=[
+                InMemoryNode(node_id="node-1", kind="paragraph", text="alpha"),
+                InMemoryNode(node_id="node-2", kind="paragraph", text="beta"),
+            ],
+        ),
+        guardrail_policy=GuidedReadingCapability().guardrail_policy(),
+    )
+    bridge = CodexLibraryBridge(session=guarded_session, capability=GuidedReadingCapability())
+
+    with pytest.raises(GuardrailViolationError):
+        bridge.execute_tool_call(CodexToolCall(call_id="1", name="advance"))
+
+    render_trace = bridge.render_trace()
+    assert len(render_trace.operations) == 1
+    assert render_trace.operations[0].tool_name == "advance"
+    assert render_trace.operations[0].status == "failed"
+    assert render_trace.operations[0].error["type"] == "GuardrailViolationError"

@@ -18,6 +18,7 @@ from docwright.adapters.agent.codex_types import (
     CodexToolResult,
     CodexUsageSnapshot,
 )
+from docwright.protocol.render import RenderToolCall, RenderTrace
 
 if TYPE_CHECKING:
     from docwright.capabilities.base import CapabilityProfile
@@ -36,6 +37,7 @@ class CodexLibraryBridge:
     session: RuntimeSession
     capability: CapabilityProfile | None = None
     adapter: CodexAdapter = field(default_factory=CodexAdapter)
+    _render_operations: list[RenderToolCall] = field(default_factory=list, init=False, repr=False)
 
     def export_step(self) -> CodexRuntimeContract:
         """Return the current step contract for the external Codex host."""
@@ -45,20 +47,22 @@ class CodexLibraryBridge:
     def execute_tool_call(self, call: CodexToolCall) -> CodexToolResult:
         """Execute one Codex tool call against the live DocWright session."""
 
-        return self.adapter.execute_tool_call(
-            session=self.session,
-            capability=self.capability,
-            call=call,
-        )
+        try:
+            result = self.adapter.execute_tool_call(
+                session=self.session,
+                capability=self.capability,
+                call=call,
+            )
+        except Exception as exc:
+            self._record_render_failure(call, exc)
+            raise
+        self._record_render_success(call, result)
+        return result
 
     def execute_tool_calls(self, calls: tuple[CodexToolCall, ...]) -> tuple[CodexToolResult, ...]:
         """Execute multiple Codex tool calls against the live DocWright session."""
 
-        return self.adapter.execute_tool_calls(
-            session=self.session,
-            capability=self.capability,
-            calls=calls,
-        )
+        return tuple(self.execute_tool_call(call) for call in calls)
 
     def stream_output_delta(self, *, text_delta: str = "", raw: object | None = None) -> None:
         """Forward a streaming output delta to bridge observers and trace sinks."""
@@ -79,6 +83,45 @@ class CodexLibraryBridge:
             output_text=output_text,
             stop_reason=stop_reason,
             raw=raw,
+        )
+
+    def render_operations(self) -> tuple[RenderToolCall, ...]:
+        """Return externally visible agent actions as a minimal render log."""
+
+        return tuple(self._render_operations)
+
+    def render_trace(self) -> RenderTrace:
+        """Return a transport-neutral render payload for external consumers."""
+
+        return RenderTrace(
+            adapter=self.adapter.descriptor.name,
+            session_id=self.session.model.session_id,
+            run_id=self.session.model.run_id,
+            operations=self.render_operations(),
+        )
+
+    def _record_render_success(self, call: CodexToolCall, result: CodexToolResult) -> None:
+        self._render_operations.append(
+            RenderToolCall(
+                sequence=len(self._render_operations) + 1,
+                call_id=call.call_id,
+                tool_name=call.name,
+                arguments=dict(call.arguments),
+                status="completed",
+                output=result.output,
+            )
+        )
+
+    def _record_render_failure(self, call: CodexToolCall, exc: Exception) -> None:
+        self._render_operations.append(
+            RenderToolCall(
+                sequence=len(self._render_operations) + 1,
+                call_id=call.call_id,
+                tool_name=call.name,
+                arguments=dict(call.arguments),
+                status="failed",
+                error={"type": type(exc).__name__, "message": str(exc)},
+            )
         )
 
     def usage_snapshot(self) -> CodexUsageSnapshot:

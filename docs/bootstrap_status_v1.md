@@ -189,6 +189,7 @@ The following are now implemented as part of the current Core baseline:
 - declarative workspace template/profile/registry skeleton
 - runtime-level workspace profile/template resolution with structured workspace metadata
 - protocol command/event models and serialization helpers
+- minimal render protocol for externally visible agent tool-call traces
 - document handle protocols/interfaces
 - in-memory fake document handles for tests
 - agent adapter / capability / skill interfaces
