@@ -35,7 +35,7 @@ Implemented baseline capabilities now include:
 - executable workspace template/profile rules with assembled-source views and locked-shell enforcement
 - compile result/error contracts, concrete LaTeX compiler profiles, and artifact-aware compiler boundary
 - local-process sandbox backend for workspace compilation
-- bubblewrap-backed strong sandbox backend option for supported hosts
+- bubblewrap-backed strong sandbox backend option for supported hosts, now preferred by the built-in default compiler path
 - protocol command/event schemas plus serialization helpers
 - document handle interfaces plus in-memory fake handles
 - lazy `docwright.document` facade for optional document-conversion backends

@@ -7,6 +7,7 @@ from docwright.workspace.templates import EditableRegionSpec, WorkspaceTemplate
 from docwright.workspace.builtins import (
     DEFAULT_LATEX_ANNOTATION_PROFILE,
     DEFAULT_LATEX_ANNOTATION_TEMPLATE,
+    build_default_latex_workspace_compiler,
     build_default_workspace_registry,
     build_local_latex_workspace_compiler,
     build_bubblewrap_latex_workspace_compiler,
@@ -16,6 +17,7 @@ from docwright.workspace.sandbox import BubblewrapSandboxBackend, LocalProcessSa
 
 __all__ = [
     "CompileArtifact",
+    "build_default_latex_workspace_compiler",
     "build_local_latex_workspace_compiler",
     "build_bubblewrap_latex_workspace_compiler",
     "build_default_workspace_registry",

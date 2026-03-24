@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import shutil
 
 from docwright.workspace.latex import LatexWorkspaceCompiler
 from docwright.workspace.profiles import WorkspaceProfile
@@ -45,7 +46,7 @@ DEFAULT_LATEX_ANNOTATION_PROFILE = WorkspaceProfile(
     template_id=DEFAULT_LATEX_ANNOTATION_TEMPLATE.template_id,
     body_kind="latex_body",
     compiler_profile="tectonic",
-    sandbox_profile="local_process",
+    sandbox_profile="bubblewrap",
     locked_sections=("preamble", "document_structure"),
     model_summary=(
         "Edit only the annotation body between the DocWright body markers; keep the LaTeX shell locked."
@@ -88,5 +89,31 @@ def build_bubblewrap_latex_workspace_compiler(
     return LatexWorkspaceCompiler(
         sandbox=BubblewrapSandboxBackend(base_dir=Path(base_dir) if base_dir is not None else None),
         profile=profile,
+        sandbox_policy=sandbox_policy,
+    )
+
+
+def build_default_latex_workspace_compiler(
+    *,
+    profile: str = "tectonic",
+    base_dir: str | None = None,
+    sandbox_policy: SandboxPolicy | None = None,
+) -> LatexWorkspaceCompiler:
+    """Create the preferred built-in LaTeX compiler.
+
+    Current priority:
+    1. bubblewrap-backed strong sandbox when `bwrap` is available
+    2. local-process fallback otherwise
+    """
+
+    if shutil.which("bwrap") is not None:
+        return build_bubblewrap_latex_workspace_compiler(
+            profile=profile,
+            base_dir=base_dir,
+            sandbox_policy=sandbox_policy,
+        )
+    return build_local_latex_workspace_compiler(
+        profile=profile,
+        base_dir=base_dir,
         sandbox_policy=sandbox_policy,
     )

@@ -154,7 +154,7 @@ Current baseline includes:
 - built-in annotation-first workspace registry plus runtime-level workspace profile/template resolution
 - annotation-first LaTeX compiler profiles with structured diagnostics/artifacts
 - local-process sandbox backend for workspace compilation plus structured compiler/sandbox metadata
-- bubblewrap-backed strong sandbox option for tighter filesystem/process isolation on supported hosts
+- bubblewrap-backed strong sandbox option for tighter filesystem/process isolation on supported hosts, now preferred by the built-in default compiler path
 - structured workspace description via `describe_workspace`
 - transport-neutral protocol commands, events, and serialization helpers
 - minimal render protocol for externally visible agent tool-call traces

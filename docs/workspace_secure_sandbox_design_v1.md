@@ -51,6 +51,7 @@ The repository now contains two concrete sandbox backends:
 Recommended positioning:
 - keep `LocalProcessSandboxBackend` for tests, debugging, and portable fallback
 - use `BubblewrapSandboxBackend` when the host supports `bwrap` and stronger isolation is needed
+- the built-in default compiler path should prefer bubblewrap and fall back to local-process only when bubblewrap is unavailable
 
 So the correct near-term strategy is **parallel backends**, not immediate replacement.
 
