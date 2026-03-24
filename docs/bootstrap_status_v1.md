@@ -31,8 +31,10 @@ Implemented baseline capabilities now include:
 - runtime sessions with current-node, context, keyword search, highlight, warning, open-workspace, and advance actions
 - action-capable runtime node views over document handles
 - Core event envelopes and guardrail enforcement
-- workspace sessions with read/write/patch/compile/submit lifecycle
-- compile result/error contracts and compiler boundary
+- workspace sessions with read/write/patch/read-source/compile/submit lifecycle
+- executable workspace template/profile rules with assembled-source views and locked-shell enforcement
+- compile result/error contracts, concrete LaTeX compiler profiles, and artifact-aware compiler boundary
+- local-process sandbox backend for workspace compilation
 - protocol command/event schemas plus serialization helpers
 - document handle interfaces plus in-memory fake handles
 - lazy `docwright.document` facade for optional document-conversion backends
@@ -105,6 +107,7 @@ Do **not** collapse these concepts back into one “agent profile” abstraction
 - `docs/workspace_session_contract_v1.md`
 - `docs/workspace_sandbox_design_v1.md`
 - `docs/workspace_profile_design_v1.md`
+- `docs/workspace_completion_checklist_v1.md`
 - `docs/codex_adapter_design_v1.md`
 - `docs/codex_adapter_execution_checklist_v1.md`
 - `docs/codex_direct_library_integration_v1.md`
@@ -185,9 +188,12 @@ The following are now implemented as part of the current Core baseline:
 - one-workspace-per-step and highlight-before-advance guardrails
 - workspace state machine baseline
 - compile result + compile error models
-- workspace read/write/patch/compile/submit lifecycle
-- declarative workspace template/profile/registry skeleton
+- workspace read/write/patch/read-source/compile/submit lifecycle
+- declarative workspace template/profile/registry system with executable template assembly
+- built-in annotation-first workspace registry
 - runtime-level workspace profile/template resolution with structured workspace metadata
+- LaTeX compiler profiles with structured diagnostics/artifacts
+- local-process sandbox backend and sandbox-aware compiler metadata
 - protocol command/event models and serialization helpers
 - minimal render protocol for externally visible agent tool-call traces
 - document handle protocols/interfaces
@@ -207,7 +213,7 @@ Still intentionally incomplete / future work:
 - concrete provider-specific adapters
 - frontend/service transport layers
 - full parser/document package split
-- richer production compiler backends migrated from the prototype
+- additional compiler/sandbox backends beyond the current local-process + LaTeX baseline
 - broader capability catalog beyond the current guided-reading/manual-task baseline
 
 ---
@@ -240,6 +246,7 @@ The `docwright.document` package now acts as a unified facade:
 ## 7. Immediate coding entry point
 
 The R1-R8 checklist in `docs/execution_checklist_v1.md` is complete.
+The focused workspace completion checklist in `docs/workspace_completion_checklist_v1.md` is also complete.
 
 If continuing implementation work, use this order:
 

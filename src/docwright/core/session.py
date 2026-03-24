@@ -292,6 +292,7 @@ class RuntimeSession:
         patch_scope = "editable_region_only"
         locked_sections: tuple[str, ...] = ()
         model_summary = ""
+        resolved_sandbox_profile: str | None = None
 
         if workspace_profile is not None:
             if self._workspace_registry is None:
@@ -316,6 +317,7 @@ class RuntimeSession:
             patch_scope = resolved_profile.patch_scope
             locked_sections = resolved_profile.locked_sections
             model_summary = resolved_profile.model_summary
+            resolved_sandbox_profile = resolved_profile.sandbox_profile
         elif template_id is not None:
             if self._workspace_registry is None:
                 raise ValueError("template_id requires a configured workspace registry")
@@ -341,14 +343,24 @@ class RuntimeSession:
                 capability_name=capability or self._model.capability_name,
                 workspace_profile=workspace_profile,
                 template_id=resolved_template_id,
+                template_source=None if resolved_template is None else resolved_template.source,
                 body_kind=resolved_body_kind,
                 compiler_profile=resolved_compiler_profile,
+                sandbox_profile=resolved_sandbox_profile,
                 compile_required_before_submit=compile_required_before_submit,
                 patch_scope=patch_scope,
                 locked_sections=locked_sections,
                 model_summary=model_summary,
                 editable_region=resolved_editable_region or EditableRegion(),
-                current_body=initial_body if initial_body is not None else (node.text_content() if node else ""),
+                current_body=(
+                    initial_body
+                    if initial_body is not None
+                    else (
+                        node.text_content()
+                        if node and node.text_content() is not None
+                        else (resolved_template.default_body() if resolved_template is not None else "")
+                    )
+                ),
             ),
             compiler=compiler or self._workspace_compiler,
         )

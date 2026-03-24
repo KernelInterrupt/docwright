@@ -50,14 +50,17 @@ Minimum concepts:
 A workspace session should support:
 
 - `read_body()`
+- `read_source()`
 - `write_body(content)`
 - `patch_body(old, new)`
 - `compile()`
 - `get_compile_errors()`
 - `submit()`
 
+Implemented current extension:
+- `read_source()` returns the assembled locked-shell source view
+
 Optional later:
-- read full file separately from body
 - multi-file sessions
 - non-LaTeX validators
 

@@ -66,6 +66,7 @@ def make_workspace_registry() -> WorkspaceProfileRegistry:
             compiler_profile="tectonic",
             locked_sections=("preamble", "document_structure"),
             model_summary="Edit only the annotation body.",
+            sandbox_profile="local_process",
         )
     )
     return registry
@@ -347,6 +348,8 @@ def test_runtime_session_open_workspace_resolves_profile_defaults_from_registry(
     assert workspace.model.locked_sections == ("preamble", "document_structure")
     assert workspace.model.patch_scope == "editable_region_only"
     assert workspace.model.model_summary == "Edit only the annotation body."
+    assert workspace.model.sandbox_profile == "local_process"
+    assert "text for node-1" in workspace.describe()["assembled_source"]
 
 
 def test_runtime_session_open_workspace_rejects_profile_without_registry() -> None:

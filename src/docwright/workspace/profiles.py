@@ -18,3 +18,4 @@ class WorkspaceProfile:
     locked_sections: tuple[str, ...] = ()
     model_summary: str = ""
     compiler_profile: str | None = None
+    sandbox_profile: str | None = None

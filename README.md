@@ -149,9 +149,11 @@ DocWrightCodexEntry.from_document(document, ...)
 Current baseline includes:
 - runtime sessions with current-node, context, keyword search, highlight, warning, open-workspace, and advance actions
 - action-capable runtime node views over document handles
-- workspace sessions with read/write/patch/compile/submit lifecycle
-- declarative workspace template/profile/registry skeleton
-- runtime-level workspace profile/template resolution with structured workspace metadata
+- workspace sessions with read/write/patch/read-source/compile/submit lifecycle
+- executable workspace templates with declarative editable-region rules and assembled-source views
+- built-in annotation-first workspace registry plus runtime-level workspace profile/template resolution
+- annotation-first LaTeX compiler profiles with structured diagnostics/artifacts
+- local-process sandbox backend for workspace compilation plus structured compiler/sandbox metadata
 - structured workspace description via `describe_workspace`
 - transport-neutral protocol commands, events, and serialization helpers
 - minimal render protocol for externally visible agent tool-call traces
@@ -207,7 +209,8 @@ Important current decisions:
 - workspace is **not** direct `DocumentIR` mutation
 - workspace is **not** the same thing as sandbox execution
 - annotation is the first strong special case
-- workspace rules should become declarative and visible to the model
+- workspace rules are now declarative, executable, and visible through workspace metadata
+- annotation-first LaTeX compilation can run through an optional local sandbox backend
 
 Relevant docs:
 - `docs/workspace_session_contract_v1.md`

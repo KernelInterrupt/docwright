@@ -254,6 +254,20 @@ The goal is predictable extensibility, not cleverness.
 
 ---
 
+
+## 6.5 Current implemented baseline
+
+The repository now implements the following profile/runtime pieces:
+- executable `WorkspaceTemplate` rules (`extract` / `render`)
+- persisted template shell in `WorkspaceSessionModel.template_source`
+- assembled-source exposure through workspace descriptions
+- built-in `latex_annotation` profile + `default_annotation_tex` template
+- `sandbox_profile` metadata on workspace profiles for backend selection/reporting
+
+This means workspace profiles are no longer only documentation-facing metadata;
+they now directly influence workspace assembly, mutation guardrails, compiler
+selection metadata, and host-visible readiness reporting.
+
 ## 7. What the model must be told
 
 A workspace should expose its rule surface explicitly.

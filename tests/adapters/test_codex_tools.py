@@ -27,7 +27,7 @@ def make_workspace_registry() -> WorkspaceProfileRegistry:
             template_id="default_annotation_tex",
             task="annotation",
             body_kind="latex_body",
-            source="template shell",
+            source="\n".join([r"\documentclass{article}", "% DOCWRIGHT:BODY_START", "% DOCWRIGHT:BODY_END"]),
             editable_regions=(
                 EditableRegionSpec(
                     name="body",
@@ -48,6 +48,7 @@ def make_workspace_registry() -> WorkspaceProfileRegistry:
             compiler_profile="tectonic",
             locked_sections=("preamble",),
             model_summary="Edit only the annotation body.",
+            sandbox_profile="local_process",
         )
     )
     return registry
@@ -182,3 +183,4 @@ def test_tool_registry_open_workspace_uses_registry_profile_defaults() -> None:
     assert workspace["locked_sections"] == ["preamble"]
     assert workspace["summary"] == "Edit only the annotation body."
     assert workspace["editable_region"]["start_marker"] == "% DOCWRIGHT:BODY_START"
+    assert workspace["sandbox_profile"] == "local_process"

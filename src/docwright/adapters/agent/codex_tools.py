@@ -363,6 +363,18 @@ class CodexToolRegistry:
             "ok": result.ok,
             "backend_name": result.backend_name,
             "rendered_content": result.rendered_content,
+            "assembled_source": result.assembled_source,
+            "stdout": result.stdout,
+            "stderr": result.stderr,
+            "artifacts": [
+                {
+                    "name": artifact.name,
+                    "path": artifact.path,
+                    "media_type": artifact.media_type,
+                    "description": artifact.description,
+                }
+                for artifact in result.artifacts
+            ],
             "errors": [self._serialize_compile_error(error) for error in result.errors],
         }
 

@@ -57,9 +57,10 @@ That means the intended semantics are:
 - compile validates or renders the full assembled document
 
 Current implementation note:
-- today's baseline implementation is still simpler than this target and often
-  seeds the editable body from node text
-- that is a temporary baseline, not the ideal long-term semantic contract
+- the repository now has a transport-neutral `SandboxBackend` contract
+- `LocalProcessSandboxBackend` exists for local development/tests
+- `LatexWorkspaceCompiler` now runs through the sandbox contract instead of assuming direct host execution
+- workspaces may still seed the editable body from node text, but the locked LaTeX shell is now explicit when a template/profile is used
 
 ---
 
@@ -207,8 +208,8 @@ Highest-value follow-ups:
 1. Make workspace semantics explicitly annotation-first in docs and APIs
 2. Improve contract metadata so tool readiness is visible before use
 3. Introduce optional compiler readiness / backend metadata
-4. Add sandbox backend interfaces without polluting Core runtime state
-5. Later, add optional LaTeX compiler backend as an extension rather than a Core dependency
+4. Add more sandbox backend implementations without polluting Core runtime state
+5. Expand compiler/backend coverage beyond the current local-process + LaTeX baseline
 
 ---
 

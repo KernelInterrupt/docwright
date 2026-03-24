@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 import pytest
 
-from docwright.workspace.models import CompileError, CompileResult, WorkspaceSessionModel, WorkspaceState
+from docwright.workspace.models import CompileError, CompileResult, EditableRegion, WorkspaceSessionModel, WorkspaceState
 from docwright.workspace.session import WorkspaceGuardrailError, WorkspaceSession
 
 
@@ -180,9 +180,78 @@ def test_workspace_session_describe_surfaces_profile_metadata_and_readiness() ->
     assert described["template_id"] == "default_annotation_tex"
     assert described["body_kind"] == "latex_body"
     assert described["compiler_profile"] == "tectonic"
+    assert described["sandbox_profile"] is None
     assert described["compile_required_before_submit"] is True
     assert described["patch_scope"] == "editable_region_only"
     assert described["locked_sections"] == []
     assert described["summary"] == ""
     assert described["compile_ready"] is True
     assert described["submit_ready"] is False
+
+
+def test_workspace_session_can_read_assembled_source_from_template_shell() -> None:
+    model = WorkspaceSessionModel(
+        workspace_id="ws-1",
+        task="annotation",
+        template_source="\n".join(
+            [
+                r"\documentclass{article}",
+                "% DOCWRIGHT:BODY_START",
+                "% DOCWRIGHT:BODY_END",
+            ]
+        ),
+        editable_region=EditableRegion(
+            name="body",
+            mode="marker_range",
+            start_marker="% DOCWRIGHT:BODY_START",
+            end_marker="% DOCWRIGHT:BODY_END",
+        ),
+        current_body="\nannotation body\n",
+    )
+    session = WorkspaceSession(model)
+
+    source = session.read_source()
+
+    assert "annotation body" in source
+    assert source.count("% DOCWRIGHT:BODY_START") == 1
+    assert model.history[-1].action == "workspace.source_read"
+
+
+def test_workspace_session_rejects_marker_in_editable_body() -> None:
+    model = WorkspaceSessionModel(
+        workspace_id="ws-1",
+        task="annotation",
+        template_source="\n".join(
+            [
+                r"\documentclass{article}",
+                "% DOCWRIGHT:BODY_START",
+                "% DOCWRIGHT:BODY_END",
+            ]
+        ),
+        editable_region=EditableRegion(
+            name="body",
+            mode="marker_range",
+            start_marker="% DOCWRIGHT:BODY_START",
+            end_marker="% DOCWRIGHT:BODY_END",
+        ),
+    )
+    session = WorkspaceSession(model)
+
+    with pytest.raises(WorkspaceGuardrailError, match="start marker"):
+        session.write_body("oops % DOCWRIGHT:BODY_START")
+
+
+def test_submit_can_skip_compile_when_workspace_policy_allows_it() -> None:
+    model = WorkspaceSessionModel(
+        workspace_id="ws-1",
+        task="annotation",
+        compile_required_before_submit=False,
+        current_body="draft",
+    )
+    session = WorkspaceSession(model)
+
+    submitted = session.submit()
+
+    assert submitted.ok is True
+    assert submitted.backend_name == "workspace.submit"
+    assert model.state is WorkspaceState.SUBMITTED

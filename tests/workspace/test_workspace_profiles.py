@@ -14,6 +14,7 @@ def test_editable_region_spec_can_create_runtime_region() -> None:
 
     assert region_spec.as_runtime_region() == EditableRegion(
         name="body",
+        mode="marker_range",
         start_marker="% DOCWRIGHT:BODY_START",
         end_marker="% DOCWRIGHT:BODY_END",
     )
@@ -83,3 +84,33 @@ def test_workspace_profile_registry_raises_structured_errors_for_unknown_entries
         assert "unknown workspace profile" in str(exc)
     else:
         raise AssertionError("expected missing profile to raise WorkspaceRegistryError")
+
+
+def test_workspace_template_can_extract_and_render_body() -> None:
+    template = WorkspaceTemplate(
+        template_id="default_annotation_tex",
+        task="annotation",
+        body_kind="latex_body",
+        source="\n".join(
+            [
+                r"\documentclass{article}",
+                "% DOCWRIGHT:BODY_START",
+                "draft",
+                "% DOCWRIGHT:BODY_END",
+            ]
+        ),
+        editable_regions=(
+            EditableRegionSpec(
+                name="body",
+                mode="marker_range",
+                start_marker="% DOCWRIGHT:BODY_START",
+                end_marker="% DOCWRIGHT:BODY_END",
+            ),
+        ),
+    )
+
+    assert template.default_body() == "\ndraft\n"
+    rendered = template.render_body("\nupdated\n")
+    assert "updated" in rendered
+    assert "% DOCWRIGHT:BODY_START" in rendered
+    assert "% DOCWRIGHT:BODY_END" in rendered

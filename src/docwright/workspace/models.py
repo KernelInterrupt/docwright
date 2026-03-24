@@ -9,8 +9,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from docwright._compat import StrEnum
 from typing import Any
+
+from docwright._compat import StrEnum
 
 
 class WorkspaceState(StrEnum):
@@ -21,6 +22,16 @@ class WorkspaceState(StrEnum):
     COMPILED = "compiled"
     COMPILE_FAILED = "compile_failed"
     SUBMITTED = "submitted"
+
+
+@dataclass(slots=True, frozen=True)
+class CompileArtifact:
+    """Collected artifact produced by a workspace compile backend."""
+
+    name: str
+    path: str
+    media_type: str | None = None
+    description: str | None = None
 
 
 @dataclass(slots=True, frozen=True)
@@ -42,6 +53,10 @@ class CompileResult:
     backend_name: str
     rendered_content: str | None = None
     errors: tuple[CompileError, ...] = ()
+    assembled_source: str | None = None
+    stdout: str | None = None
+    stderr: str | None = None
+    artifacts: tuple[CompileArtifact, ...] = ()
 
 
 @dataclass(slots=True, frozen=True)
@@ -49,6 +64,7 @@ class EditableRegion:
     """Describes the portion of the workspace that may be mutated."""
 
     name: str = "body"
+    mode: str = "full_body"
     start_marker: str | None = None
     end_marker: str | None = None
 
@@ -76,8 +92,10 @@ class WorkspaceSessionModel:
     capability_name: str | None = None
     workspace_profile: str | None = None
     template_id: str | None = None
+    template_source: str | None = None
     body_kind: str | None = None
     compiler_profile: str | None = None
+    sandbox_profile: str | None = None
     compile_required_before_submit: bool = True
     patch_scope: str = "editable_region_only"
     locked_sections: tuple[str, ...] = ()
