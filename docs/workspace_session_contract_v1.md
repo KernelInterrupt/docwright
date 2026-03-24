@@ -5,6 +5,8 @@ This document defines the **workspace session** abstraction for DocWright Core.
 This is the generalized replacement for the old annotation-specific sandbox idea.
 
 A workspace session is a controlled editing environment derived from a document node.
+It should remain general enough for future reuse, but its **first concrete design
+target is annotation-oriented LaTeX editing**, not arbitrary raw-text mutation.
 
 ---
 
@@ -17,7 +19,14 @@ A workspace session exists so an agent runtime can:
 - inspect structured errors
 - submit a finalized result
 
-The first practical task may still be `annotation`, but the abstraction should support future tasks.
+The first practical task is `annotation`.
+In that flow, the workspace should behave like a controlled LaTeX work document:
+- fixed template shell
+- explicit editable body region
+- compile against the full assembled document
+
+The abstraction may support future tasks later, but current Core semantics should
+stay aligned with this annotation-first model.
 
 ---
 
@@ -29,7 +38,8 @@ Minimum concepts:
 - `capability` or task-mode hint
 - `state`
 - `editable_region`
-- `current_file` or equivalent body representation
+- `template shell` or equivalent locked document structure
+- `editable body`
 - `compile_result`
 - `history`
 
@@ -81,9 +91,12 @@ Core should reject invalid transitions.
 
 The runtime may expose a full file representation, but the editable region must be explicit.
 
-For the first annotation-oriented workflow, this likely means:
+For the current annotation-oriented workflow:
 - template shell is locked
 - only body region is writable
+- `read_body()` / `write_body()` / `patch_body()` operate on that editable body
+- the model must not rewrite `\usepackage`, `\begin{document}`, template macros,
+  or other protected structure
 
 This prevents the model from rewriting package imports, template structure, or other protected content.
 
@@ -92,6 +105,12 @@ This prevents the model from rewriting package imports, template structure, or o
 ## 6. Compile contract
 
 `compile()` should return a structured result, not just raw stdout.
+
+For the annotation-first workflow, compile should conceptually:
+1. take the current editable body
+2. insert it into the locked template shell
+3. compile/validate the assembled LaTeX document
+4. return structured success or failure details
 
 Minimum compile result fields:
 - `ok`
@@ -155,3 +174,7 @@ Preferred framing:
 - `controlled editing session`
 
 Avoid framing it as if all future workspaces are permanently annotation-only.
+
+At the same time, do not over-generalize the current implementation into
+"arbitrary editable text buffer" semantics. Current Core should still treat
+workspace sessions as annotation-first controlled document editing.

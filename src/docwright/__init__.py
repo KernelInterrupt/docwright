@@ -1,4 +1,6 @@
-"""DocWright core package."""
+"""DocWright unified package facade."""
 
-__all__ = ["__version__"]
+from docwright import document
+
+__all__ = ["__version__", "document"]
 __version__ = "0.1.0"

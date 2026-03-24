@@ -74,6 +74,14 @@ class WorkspaceSessionModel:
     workspace_id: str
     task: str
     capability_name: str | None = None
+    workspace_profile: str | None = None
+    template_id: str | None = None
+    body_kind: str | None = None
+    compiler_profile: str | None = None
+    compile_required_before_submit: bool = True
+    patch_scope: str = "editable_region_only"
+    locked_sections: tuple[str, ...] = ()
+    model_summary: str = ""
     state: WorkspaceState = WorkspaceState.INITIALIZED
     editable_region: EditableRegion = field(default_factory=EditableRegion)
     current_body: str = ""

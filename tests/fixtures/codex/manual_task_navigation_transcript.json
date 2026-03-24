@@ -1,6 +1,6 @@
 {
   "contract": {
-    "instructions": "You are a Codex-side agent operating DocWright through tools.\n\nUse the provided tools to inspect runtime state and perform document actions.\n\nDo not invent document structure, workspace contents, or step state.\n\nActive capability: manual_task - Manual document task mode with relaxed runtime guardrails.\n\nGuardrails: max 1 workspace open per step\n\nActive skill bundles:\n- navigation: current_node, get_context, advance\n- highlighting: highlight\n- warnings: warning\n- workspace_editing: open_workspace, read_body, write_body, patch_body, compile, submit\n\nRuntime identifiers: session=session-1, run=run-1.\n\nWork one DocWright step at a time. Prefer structured tool calls over free-form explanation.",
+    "instructions": "You are a Codex-side agent operating DocWright through tools.\n\nUse the provided tools to inspect runtime state and perform document actions.\n\nDo not invent document structure, workspace contents, or step state.\n\nActive capability: manual_task - Manual document task mode with relaxed runtime guardrails.\n\nGuardrails: max 1 workspace open per step\n\nActive skill bundles:\n- navigation: current_node, get_context, advance\n- highlighting: highlight\n- warnings: warning\n- workspace_editing: open_workspace, describe_workspace, read_body, write_body, patch_body, compile, submit\n\nRuntime identifiers: session=session-1, run=run-1.\n\nWork one DocWright step at a time. Prefer structured tool calls over free-form explanation.",
     "turn_prompt": "Run one DocWright step for session session-1.\nCurrent node: node-1 (paragraph) on page 1.\nNode text preview: alpha\nLocal context -> before: <none>; after: node-2.",
     "tools": [
       {
@@ -107,10 +107,38 @@
             },
             "initial_body": {
               "type": "string"
+            },
+            "workspace_profile": {
+              "type": "string"
+            },
+            "template_id": {
+              "type": "string"
+            },
+            "body_kind": {
+              "type": "string"
+            },
+            "compiler_profile": {
+              "type": "string"
             }
           },
           "required": [
             "task"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "describe_workspace",
+        "description": "Return the workspace rules, readiness, and editable-region metadata.",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "workspace_id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "workspace_id"
           ],
           "additionalProperties": false
         }

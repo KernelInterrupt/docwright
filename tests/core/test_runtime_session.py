@@ -11,6 +11,9 @@ from docwright.core.guardrails import (
 from docwright.core.models import RuntimeSessionModel, RuntimeSessionStatus
 from docwright.core.session import RuntimeNodeView, RuntimeSession
 from docwright.document.interfaces import NodeContextSlice, NodeRelationRef
+from docwright.workspace.profiles import WorkspaceProfile
+from docwright.workspace.registry import WorkspaceProfileRegistry
+from docwright.workspace.templates import EditableRegionSpec, WorkspaceTemplate
 
 
 @dataclass(slots=True)
@@ -26,6 +29,46 @@ class DummyNode:
     def relations(self) -> tuple[NodeRelationRef, ...]:
         return self.relation_refs
 
+
+
+
+def make_workspace_registry() -> WorkspaceProfileRegistry:
+    registry = WorkspaceProfileRegistry()
+    registry.register_template(
+        WorkspaceTemplate(
+            template_id="default_annotation_tex",
+            task="annotation",
+            body_kind="latex_body",
+            source="\n".join(
+                [
+                    r"\documentclass{article}",
+                    "% DOCWRIGHT:BODY_START",
+                    "% DOCWRIGHT:BODY_END",
+                ]
+            ),
+            editable_regions=(
+                EditableRegionSpec(
+                    name="body",
+                    mode="marker_range",
+                    start_marker="% DOCWRIGHT:BODY_START",
+                    end_marker="% DOCWRIGHT:BODY_END",
+                ),
+            ),
+            compiler_profile="tectonic",
+        )
+    )
+    registry.register_profile(
+        WorkspaceProfile(
+            profile_name="latex_annotation",
+            task="annotation",
+            template_id="default_annotation_tex",
+            body_kind="latex_body",
+            compiler_profile="tectonic",
+            locked_sections=("preamble", "document_structure"),
+            model_summary="Edit only the annotation body.",
+        )
+    )
+    return registry
 
 class DummyDocument:
     def __init__(self) -> None:
@@ -124,6 +167,7 @@ def test_runtime_node_view_supports_relations_warning_and_workspace_actions() ->
     session = RuntimeSession(
         RuntimeSessionModel(session_id="session-1", run_id="run-1", document_id="doc-1"),
         document=DummyDocument(),
+        workspace_registry=make_workspace_registry(),
     )
     node = session.current_node()
     assert node is not None
@@ -134,11 +178,21 @@ def test_runtime_node_view_supports_relations_warning_and_workspace_actions() ->
         message="Needs review",
         evidence=("node-1",),
     )
-    workspace = node.open_workspace(task="annotation")
+    workspace = node.open_workspace(
+        task="annotation",
+        workspace_profile="latex_annotation",
+        template_id="default_annotation_tex",
+        body_kind="latex_body",
+        compiler_profile="tectonic",
+    )
 
     assert session.model.step.warning_count == 1
     assert warning_event.as_protocol_event().event_name == "warning.raised"
     assert workspace.workspace_id in {item.workspace_id for item in session.workspaces()}
+    assert workspace.model.workspace_profile == "latex_annotation"
+    assert workspace.model.template_id == "default_annotation_tex"
+    assert workspace.model.body_kind == "latex_body"
+    assert workspace.model.compiler_profile == "tectonic"
     assert workspace.read_body() == "text for node-1"
 
 
@@ -270,3 +324,47 @@ def test_runtime_session_respects_advance_permission() -> None:
         session.advance()
 
     assert exc_info.value.violation.code is GuardrailCode.ACTION_NOT_PERMITTED
+
+
+def test_runtime_session_open_workspace_resolves_profile_defaults_from_registry() -> None:
+    session = RuntimeSession(
+        RuntimeSessionModel(session_id="session-1", run_id="run-1", document_id="doc-1"),
+        document=DummyDocument(),
+        workspace_registry=make_workspace_registry(),
+    )
+    node = session.current_node()
+    assert node is not None
+
+    workspace = node.open_workspace(task="annotation", workspace_profile="latex_annotation")
+
+    assert workspace.model.workspace_profile == "latex_annotation"
+    assert workspace.model.template_id == "default_annotation_tex"
+    assert workspace.model.body_kind == "latex_body"
+    assert workspace.model.compiler_profile == "tectonic"
+    assert workspace.model.editable_region.name == "body"
+    assert workspace.model.editable_region.start_marker == "% DOCWRIGHT:BODY_START"
+    assert workspace.model.editable_region.end_marker == "% DOCWRIGHT:BODY_END"
+    assert workspace.model.locked_sections == ("preamble", "document_structure")
+    assert workspace.model.patch_scope == "editable_region_only"
+    assert workspace.model.model_summary == "Edit only the annotation body."
+
+
+def test_runtime_session_open_workspace_rejects_profile_without_registry() -> None:
+    session = RuntimeSession(
+        RuntimeSessionModel(session_id="session-1", run_id="run-1", document_id="doc-1"),
+        document=DummyDocument(),
+    )
+
+    with pytest.raises(ValueError, match="workspace_profile requires"):
+        session.open_workspace(task="annotation", workspace_profile="latex_annotation")
+
+
+def test_runtime_session_open_workspace_rejects_task_profile_mismatch() -> None:
+    session = RuntimeSession(
+        RuntimeSessionModel(session_id="session-1", run_id="run-1", document_id="doc-1"),
+        document=DummyDocument(),
+        workspace_registry=make_workspace_registry(),
+    )
+
+    with pytest.raises(ValueError, match="requires task"):
+        session.open_workspace(task="review", workspace_profile="latex_annotation")

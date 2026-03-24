@@ -132,6 +132,10 @@ class CodexToolRegistry:
                     "capability": {"type": "string"},
                     "language": {"type": "string"},
                     "initial_body": {"type": "string"},
+                    "workspace_profile": {"type": "string"},
+                    "template_id": {"type": "string"},
+                    "body_kind": {"type": "string"},
+                    "compiler_profile": {"type": "string"},
                 },
                 "required": ["task"],
                 "additionalProperties": False,
@@ -143,6 +147,12 @@ class CodexToolRegistry:
             name="advance",
             description="Advance the runtime session to the next node in reading order.",
             input_schema={"type": "object", "properties": {}, "additionalProperties": False},
+        )
+
+    def _spec_describe_workspace(self) -> CodexToolSpec:
+        return self._workspace_id_only_tool(
+            name="describe_workspace",
+            description="Return the workspace rules, readiness, and editable-region metadata.",
         )
 
     def _spec_read_body(self) -> CodexToolSpec:
@@ -246,6 +256,10 @@ class CodexToolRegistry:
             capability=arguments.get("capability"),
             language=arguments.get("language"),
             initial_body=arguments.get("initial_body"),
+            workspace_profile=arguments.get("workspace_profile"),
+            template_id=arguments.get("template_id"),
+            body_kind=arguments.get("body_kind"),
+            compiler_profile=arguments.get("compiler_profile"),
         )
         return {"workspace": self._serialize_workspace(workspace)}
 
@@ -255,6 +269,10 @@ class CodexToolRegistry:
             "status": session.model.status.value,
             "node": None if node is None else self._serialize_node(node),
         }
+
+    def _handle_describe_workspace(self, *, session: RuntimeSession, capability: CapabilityProfile | None, arguments: dict[str, Any]) -> dict[str, Any]:
+        workspace = session.workspace(arguments["workspace_id"])
+        return {"workspace": self._serialize_workspace(workspace)}
 
     def _handle_read_body(self, *, session: RuntimeSession, capability: CapabilityProfile | None, arguments: dict[str, Any]) -> dict[str, Any]:
         workspace = session.workspace(arguments["workspace_id"])
@@ -307,18 +325,7 @@ class CodexToolRegistry:
         }
 
     def _serialize_workspace(self, workspace: WorkspaceSession) -> dict[str, Any]:
-        model = workspace.model
-        return {
-            "workspace_id": workspace.workspace_id,
-            "task": workspace.task,
-            "state": model.state.value,
-            "body": model.current_body,
-            "editable_region": {
-                "name": model.editable_region.name,
-                "start_marker": model.editable_region.start_marker,
-                "end_marker": model.editable_region.end_marker,
-            },
-        }
+        return workspace.describe()
 
     def _serialize_compile_result(self, result: CompileResult) -> dict[str, Any]:
         return {

@@ -19,6 +19,7 @@ from docwright.document.interfaces import DocumentHandle, NodeContextSlice, Node
 from docwright.protocol.events import EventFamily, EventName
 from docwright.workspace.compiler import WorkspaceCompiler
 from docwright.workspace.models import EditableRegion, WorkspaceSessionModel
+from docwright.workspace.registry import WorkspaceProfileRegistry
 from docwright.workspace.session import WorkspaceSession
 
 
@@ -82,6 +83,10 @@ class RuntimeNodeView:
         initial_body: str | None = None,
         editable_region: EditableRegion | None = None,
         compiler: WorkspaceCompiler | None = None,
+        workspace_profile: str | None = None,
+        template_id: str | None = None,
+        body_kind: str | None = None,
+        compiler_profile: str | None = None,
     ) -> WorkspaceSession:
         return self.session.open_workspace(
             task=task,
@@ -90,6 +95,10 @@ class RuntimeNodeView:
             initial_body=initial_body,
             editable_region=editable_region,
             compiler=compiler,
+            workspace_profile=workspace_profile,
+            template_id=template_id,
+            body_kind=body_kind,
+            compiler_profile=compiler_profile,
         )
 
 
@@ -104,12 +113,14 @@ class RuntimeSession:
         permissions: RuntimePermissions | None = None,
         guardrail_policy: RuntimeGuardrailPolicy | None = None,
         workspace_compiler: WorkspaceCompiler | None = None,
+        workspace_registry: WorkspaceProfileRegistry | None = None,
     ):
         self._model = model
         self._document = document
         self._permissions = permissions or RuntimePermissions()
         self._guardrail_policy = guardrail_policy or RuntimeGuardrailPolicy()
         self._workspace_compiler = workspace_compiler
+        self._workspace_registry = workspace_registry
         self._events: list[RuntimeEventEnvelope] = []
         self._workspaces: dict[str, WorkspaceSession] = {}
 
@@ -135,6 +146,10 @@ class RuntimeSession:
     @property
     def guardrail_policy(self) -> RuntimeGuardrailPolicy:
         return self._guardrail_policy
+
+    @property
+    def workspace_registry(self) -> WorkspaceProfileRegistry | None:
+        return self._workspace_registry
 
     def events(self) -> tuple[RuntimeEventEnvelope, ...]:
         return tuple(self._events)
@@ -224,8 +239,61 @@ class RuntimeSession:
         initial_body: str | None = None,
         editable_region: EditableRegion | None = None,
         compiler: WorkspaceCompiler | None = None,
+        workspace_profile: str | None = None,
+        template_id: str | None = None,
+        body_kind: str | None = None,
+        compiler_profile: str | None = None,
     ) -> WorkspaceSession:
         node = self.current_node()
+        resolved_profile = None
+        resolved_template = None
+        resolved_editable_region = editable_region
+        resolved_template_id = template_id
+        resolved_body_kind = body_kind
+        resolved_compiler_profile = compiler_profile
+        compile_required_before_submit = True
+        patch_scope = "editable_region_only"
+        locked_sections: tuple[str, ...] = ()
+        model_summary = ""
+
+        if workspace_profile is not None:
+            if self._workspace_registry is None:
+                raise ValueError("workspace_profile requires a configured workspace registry")
+            resolved_profile = self._workspace_registry.profile(workspace_profile)
+            if resolved_profile.task != task:
+                raise ValueError(
+                    f"workspace profile {workspace_profile!r} requires task {resolved_profile.task!r}, got {task!r}"
+                )
+            resolved_template = self._workspace_registry.resolve_template_for_profile(
+                workspace_profile,
+                template_id=template_id,
+            )
+            resolved_template_id = resolved_template.template_id
+            resolved_body_kind = resolved_body_kind or resolved_profile.body_kind or resolved_template.body_kind
+            resolved_compiler_profile = (
+                resolved_compiler_profile
+                or resolved_profile.compiler_profile
+                or resolved_template.compiler_profile
+            )
+            compile_required_before_submit = resolved_profile.compile_required_before_submit
+            patch_scope = resolved_profile.patch_scope
+            locked_sections = resolved_profile.locked_sections
+            model_summary = resolved_profile.model_summary
+        elif template_id is not None:
+            if self._workspace_registry is None:
+                raise ValueError("template_id requires a configured workspace registry")
+            resolved_template = self._workspace_registry.template(template_id)
+            if resolved_template.task != task:
+                raise ValueError(
+                    f"workspace template {template_id!r} requires task {resolved_template.task!r}, got {task!r}"
+                )
+            resolved_template_id = resolved_template.template_id
+            resolved_body_kind = resolved_body_kind or resolved_template.body_kind
+            resolved_compiler_profile = resolved_compiler_profile or resolved_template.compiler_profile
+
+        if resolved_editable_region is None and resolved_template is not None:
+            resolved_editable_region = resolved_template.default_region_spec().as_runtime_region()
+
         workspace_id = f"ws-{uuid4()}"
         self.record_workspace_opened(workspace_id=workspace_id, task=task)
 
@@ -234,7 +302,15 @@ class RuntimeSession:
                 workspace_id=workspace_id,
                 task=task,
                 capability_name=capability or self._model.capability_name,
-                editable_region=editable_region or EditableRegion(),
+                workspace_profile=workspace_profile,
+                template_id=resolved_template_id,
+                body_kind=resolved_body_kind,
+                compiler_profile=resolved_compiler_profile,
+                compile_required_before_submit=compile_required_before_submit,
+                patch_scope=patch_scope,
+                locked_sections=locked_sections,
+                model_summary=model_summary,
+                editable_region=resolved_editable_region or EditableRegion(),
                 current_body=initial_body if initial_body is not None else (node.text_content() if node else ""),
             ),
             compiler=compiler or self._workspace_compiler,

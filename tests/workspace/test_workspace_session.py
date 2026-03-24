@@ -156,3 +156,33 @@ def test_submit_success_freezes_workspace() -> None:
 
     with pytest.raises(WorkspaceGuardrailError, match="cannot mutate"):
         session.write_body("after submit")
+
+
+
+def test_workspace_session_describe_surfaces_profile_metadata_and_readiness() -> None:
+    model = WorkspaceSessionModel(
+        workspace_id="ws-1",
+        task="annotation",
+        workspace_profile="latex_annotation",
+        template_id="default_annotation_tex",
+        body_kind="latex_body",
+        compiler_profile="tectonic",
+        current_body="draft",
+    )
+    session = WorkspaceSession(
+        model,
+        compiler=StubCompiler(result=CompileResult(ok=True, backend_name="fake", rendered_content="pdf")),
+    )
+
+    described = session.describe()
+
+    assert described["workspace_profile"] == "latex_annotation"
+    assert described["template_id"] == "default_annotation_tex"
+    assert described["body_kind"] == "latex_body"
+    assert described["compiler_profile"] == "tectonic"
+    assert described["compile_required_before_submit"] is True
+    assert described["patch_scope"] == "editable_region_only"
+    assert described["locked_sections"] == []
+    assert described["summary"] == ""
+    assert described["compile_ready"] is True
+    assert described["submit_ready"] is False

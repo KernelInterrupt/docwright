@@ -19,11 +19,12 @@ class WorkspaceEditingSkill(SkillBundle):
     )
 
     def tool_names(self) -> tuple[str, ...]:
-        return ("open_workspace", "read_body", "write_body", "patch_body", "compile", "submit")
+        return ("open_workspace", "describe_workspace", "read_body", "write_body", "patch_body", "compile", "submit")
 
     def tool_descriptions(self) -> dict[str, str]:
         return {
             "open_workspace": "Open a controlled editing workspace anchored to the current node.",
+            "describe_workspace": "Return the workspace rules, readiness, and editable-region metadata.",
             "read_body": "Read the editable workspace body before making changes.",
             "write_body": "Replace the editable workspace body with new content.",
             "patch_body": "Apply a targeted string replacement inside the editable workspace body.",

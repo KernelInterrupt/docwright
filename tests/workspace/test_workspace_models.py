@@ -11,6 +11,10 @@ def test_workspace_session_defaults_are_workspace_scoped() -> None:
     session = WorkspaceSessionModel(workspace_id="ws-1", task="annotation")
 
     assert session.state is WorkspaceState.INITIALIZED
+    assert session.workspace_profile is None
+    assert session.template_id is None
+    assert session.body_kind is None
+    assert session.compiler_profile is None
     assert session.editable_region == EditableRegion()
     assert session.current_body == ""
     assert session.current_compile_result is None

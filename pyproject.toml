@@ -1,5 +1,5 @@
 [project]
-name = "docwright-core"
+name = "docwright"
 version = "0.1.0"
 description = "Playwright-like runtime for guided document reading and controlled document actions"
 requires-python = ">=3.10"
@@ -14,6 +14,11 @@ classifiers = [
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.10",
 ]
+
+[project.optional-dependencies]
+document = []
+latex = []
+full = []
 
 [build-system]
 requires = ["setuptools>=68", "wheel"]

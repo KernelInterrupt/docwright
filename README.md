@@ -1,36 +1,170 @@
-# DocWright Core
+# DocWright
 
-DocWright is a Playwright-like runtime for guided document reading and controlled document actions.
+DocWright is a Playwright-like runtime for **structured document interaction**.
+
+It is designed for model-driven agents that need to:
+- navigate a document through stable runtime state
+- use explicit tools instead of guessing over raw blobs
+- open controlled workspaces for annotation/editing tasks
+- operate through clean Core / Adapter / Capability / Skill boundaries
 
 It is **not** a chatbot and **not** a one-shot summarizer.
 
-The current goal of this repository is to provide the standalone **DocWright Core** layer as an installable Python package:
-- stable document-facing runtime API
-- workspace/session API for controlled editing
-- runtime guardrails and event model
-- agent integration boundaries
-- capability / skill composition points
-- protocol surfaces for headless and frontend integration
+---
 
-## Why this repo exists
+## What DocWright is trying to be
 
-The older prototype repository proved the end-to-end path:
+Think of DocWright as:
+- a **document runtime**
+- a **stateful automation kernel** for document agents
+- a host for multiple agent runtimes such as Codex-like systems
 
-```text
-PDF -> IR -> runtime -> guided reading agent -> highlights / annotations / advice
+Not as:
+- generic chat over PDF text
+- a parser dump
+- product-specific prompt logic hardcoded into the runtime
+
+---
+
+## Current package shape
+
+This repository currently ships a unified Python package:
+
+```bash
+pip install -e .
 ```
 
-But that prototype also mixed together:
-- document ingestion
-- runtime handles
-- guided reading policy
-- annotation sandbox details
-- provider glue
-- local companion integration
+Package name:
+- `docwright`
 
-This repository exists to separate those concerns cleanly.
+Planned optional install shapes:
 
-## Intended layering
+```bash
+pip install -e '.[document]'
+pip install -e '.[latex]'
+pip install -e '.[full]'
+```
+
+These extras are the forward-compatible user-facing shape for a future split into separately maintained backend repos.
+
+---
+
+## Unified facade direction
+
+The user-facing surface should remain a single package:
+
+```python
+import docwright
+```
+
+Even if heavier backends move to other repos later, the intended public API stays under `docwright.*`.
+
+### Lazy optional document backend
+
+```python
+from docwright import document
+
+status = document.document_backend_status()
+# {'available': False, 'provider': None}
+```
+
+Optional conversion stays lazy:
+
+```python
+from docwright import document
+
+document.ir_converter("paper.pdf")
+```
+
+If the optional backend is not installed:
+- `import docwright` stays safe
+- `import docwright.document` stays safe
+- only the actual conversion call raises a clear install hint
+
+---
+
+## Quick start
+
+### 1. Load a prepared Document IR fixture into the runtime
+
+```python
+from docwright.document import load_in_memory_document_from_ir_path
+from docwright.capabilities.manual_task import ManualTaskCapability
+from docwright.codex.entry import DocWrightCodexEntry
+
+path = "tests/fixtures/document_ir/attention_is_all_you_need.document_ir.json"
+document = load_in_memory_document_from_ir_path(path)
+
+entry = DocWrightCodexEntry.from_document(
+    document,
+    capability=ManualTaskCapability(),
+    session_id="demo-session",
+    run_id="demo-run",
+)
+```
+
+### 2. Export one step contract for an agent host
+
+```python
+contract = entry.export_step()
+print(contract.turn_prompt)
+print([tool.name for tool in contract.tools])
+```
+
+### 3. Execute tool calls against the runtime
+
+```python
+from docwright.adapters.agent.codex_types import CodexToolCall
+
+result = entry.execute_tool_call(
+    CodexToolCall(call_id="1", name="current_node")
+)
+```
+
+---
+
+## Optional packaged sample
+
+For demo/test convenience only:
+
+```python
+from docwright.capabilities.manual_task import ManualTaskCapability
+from docwright.codex.samples.attention_fixture import build_attention_fixture_entry
+
+entry = build_attention_fixture_entry(capability=ManualTaskCapability())
+contract = entry.export_step()
+```
+
+This sample helper is intentionally thin.
+The stable integration contract remains:
+
+```python
+DocWrightCodexEntry.from_document(document, ...)
+```
+
+---
+
+## What is implemented right now
+
+Current baseline includes:
+- runtime sessions with current-node, context, highlight, warning, open-workspace, and advance actions
+- action-capable runtime node views over document handles
+- workspace sessions with read/write/patch/compile/submit lifecycle
+- declarative workspace template/profile/registry skeleton
+- runtime-level workspace profile/template resolution with structured workspace metadata
+- structured workspace description via `describe_workspace`
+- transport-neutral protocol commands, events, and serialization helpers
+- document interfaces plus in-memory document handles
+- lightweight in-repo IR loader
+- lazy `docwright.document` facade for optional external document backends
+- adapter / capability / skill interfaces
+- `guided_reading` and `manual_task` capability scaffolds
+- Codex-compatible direct-library bridge and installed entry surface
+- smoke, lifecycle, integration, and serialization tests
+
+---
+
+## Architecture snapshot
 
 ```text
 docwright-document   -> document ingestion + IR + selectors
@@ -42,66 +176,44 @@ docwright-core       -> runtime, sessions, guardrails, events, tool API
 agent adapters       -> codex, openclaw, custom runtimes, etc.
        |
        v
-capability profiles  -> guided reading, review, manual task, teaching, etc.
+capability profiles  -> guided reading, review, manual task, etc.
        |
        v
-skill/tool bundles   -> highlighting, workspace editing, research, warnings, ...
+skill/tool bundles   -> navigation, highlighting, warnings, workspace editing
        |
        v
 docwright-app        -> UI / frontend / intervention loop
 ```
 
+### Important boundaries
 
-## Install
+DocWright distinguishes:
+- **Core**
+- **Agent Adapter**
+- **Capability Profile**
+- **Skill / Tool Bundle**
+- **Workspace Session**
 
-DocWright is now an **installable Python package** targeting **Python 3.10+**.
+These should not be collapsed back into one vague “agent profile” abstraction.
 
-For local development or Codex integration:
+---
 
-```bash
-pip install -e .
-```
+## Workspace direction
 
-## Quick start
+Workspace is currently treated as a **general controlled editing framework**.
 
-Primary installed entry surface:
+Important current decisions:
+- workspace is **not** direct `DocumentIR` mutation
+- workspace is **not** the same thing as sandbox execution
+- annotation is the first strong special case
+- workspace rules should become declarative and visible to the model
 
-```python
-from docwright.codex.entry import DocWrightCodexEntry
-```
+Relevant docs:
+- `docs/workspace_session_contract_v1.md`
+- `docs/workspace_sandbox_design_v1.md`
+- `docs/workspace_profile_design_v1.md`
 
-Optional packaged sample based on the prepared Attention IR fixture:
-
-```python
-from docwright.codex.samples.attention_fixture import build_attention_fixture_entry
-from docwright.capabilities.manual_task import ManualTaskCapability
-
-entry = build_attention_fixture_entry(capability=ManualTaskCapability())
-contract = entry.export_step()
-```
-
-The sample helper is only for demo/test convenience. The main integration contract remains:
-
-```python
-DocWrightCodexEntry.from_document(document, ...)
-```
-
-## What is implemented now
-
-This repository now contains a **self-contained Core milestone** with:
-- runtime sessions with current-node, context, warning/highlight, workspace-open, and advance actions
-- action-capable runtime node views over document handles
-- workspace sessions with read/write/patch/compile/submit lifecycle
-- compile result/error contracts
-- transport-neutral protocol commands, events, and serialization helpers
-- document handle protocols plus in-memory test handles
-- adapter / capability / skill interfaces
-- reference skill bundles for navigation, highlighting, warnings, and workspace editing
-- `guided_reading` and `manual_task` capability scaffolds
-- externalized guided-reading strategy text
-- minimal headless runner with single-step and run-until-complete execution
-- smoke, integration, lifecycle, and serialization tests
-- Codex-compatible bridge scaffold with guidance export, a skill-aware tool registry, fake-driver smoke tests, a direct-library host helper, external-host fixtures, observer hooks, and usage/trace hooks
+---
 
 ## What this repo intentionally does not own
 
@@ -110,43 +222,38 @@ This repository does **not** aim to own:
 - parser-specific IR generation
 - provider-specific integration sprawl
 - frontend or API product layers
-- large prompt/business-logic bundles inside Core modules
+- large prompt/business logic bundles inside Core modules
 
-## Initial documents
+---
 
-- `docs/bootstrap_status_v1.md`
-- `docs/core_agent_boundary_v1.md`
-- `docs/agent_integration_model_v1.md`
-- `docs/implementation_master_plan_v1.md`
-- `docs/execution_checklist_v1.md`
-- `docs/migration_checklist_v1.md`
-- `docs/prototype_migration_mapping_v1.md`
-- `docs/target_repo_structure_v1.md`
-- `docs/pdf_ir_fixture_strategy_v1.md`
-- `docs/document_ir_contract_v1.md`
-- `docs/runtime_api_contract_v1.md`
-- `docs/workspace_session_contract_v1.md`
-- `docs/codex_adapter_design_v1.md`
-- `docs/codex_adapter_execution_checklist_v1.md`
-- `docs/codex_direct_library_integration_v1.md`
-- `src/docwright/codex/entry.py`
-- `src/docwright/codex/samples/attention_fixture.py`
+## Key docs
 
-## Working rule
-
-When continuing work in this repo after context compression, always read these in order:
-
+Read these first when resuming work after context compression:
 1. `docs/bootstrap_status_v1.md`
 2. `docs/implementation_master_plan_v1.md`
 3. `docs/execution_checklist_v1.md`
-4. then continue from the next post-milestone gap
+
+Other important docs:
+- `docs/core_agent_boundary_v1.md`
+- `docs/agent_integration_model_v1.md`
+- `docs/document_ir_contract_v1.md`
+- `docs/runtime_api_contract_v1.md`
+- `docs/codex_adapter_design_v1.md`
+- `docs/codex_direct_library_integration_v1.md`
+
+---
 
 ## Status
 
-The R1-R8 execution checklist is complete. The repository is now a tested,
-minimal working Core runtime baseline rather than a contracts-only scaffold.
+The original R1-R8 execution checklist is complete.
 
+The repository is now a tested, working runtime baseline with:
+- Codex-facing direct-library integration
+- installable `docwright` package shape
+- workspace profile/template groundwork
+- unified document facade groundwork
 
+---
 
 ## License
 

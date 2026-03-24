@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from typing import Any
 
 from docwright.workspace.compiler import WorkspaceCompiler
 from docwright.workspace.models import CompileError, CompileResult, WorkspaceSessionModel, WorkspaceState
@@ -96,6 +97,33 @@ class WorkspaceSession:
         self._model.submitted_at = datetime.now(timezone.utc)
         self._model.record("workspace.submitted")
         return result
+
+    def describe(self) -> dict[str, Any]:
+        """Return a structured workspace summary for adapters and tooling."""
+
+        compile_result = self._model.current_compile_result
+        return {
+            "workspace_id": self.workspace_id,
+            "task": self.task,
+            "state": self._model.state.value,
+            "body": self._model.current_body,
+            "workspace_profile": self._model.workspace_profile,
+            "template_id": self._model.template_id,
+            "body_kind": self._model.body_kind,
+            "compiler_profile": self._model.compiler_profile,
+            "compile_required_before_submit": self._model.compile_required_before_submit,
+            "patch_scope": self._model.patch_scope,
+            "locked_sections": list(self._model.locked_sections),
+            "summary": self._model.model_summary,
+            "editable_region": {
+                "name": self._model.editable_region.name,
+                "start_marker": self._model.editable_region.start_marker,
+                "end_marker": self._model.editable_region.end_marker,
+            },
+            "compile_ready": self._compiler is not None and self._model.state is not WorkspaceState.SUBMITTED,
+            "compile_backend": None if compile_result is None else compile_result.backend_name,
+            "submit_ready": self._model.state is WorkspaceState.COMPILED and compile_result is not None and compile_result.ok,
+        }
 
     def _ensure_mutable(self) -> None:
         if self._model.state is WorkspaceState.SUBMITTED:

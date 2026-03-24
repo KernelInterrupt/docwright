@@ -25,7 +25,7 @@ Its purpose is to rebuild the core architecture cleanly around:
 
 ## 2. Current reality
 
-This repo now contains a **self-contained Core milestone** as an installable Python package, not just a contracts-first skeleton.
+This repo now contains a **self-contained Core milestone** as an installable Python package with a unified `docwright` facade, not just a contracts-first skeleton.
 
 Implemented baseline capabilities now include:
 - runtime sessions with current-node, context, highlight, warning, open-workspace, and advance actions
@@ -35,6 +35,7 @@ Implemented baseline capabilities now include:
 - compile result/error contracts and compiler boundary
 - protocol command/event schemas plus serialization helpers
 - document handle interfaces plus in-memory fake handles
+- lazy `docwright.document` facade for optional document-conversion backends
 - adapter/capability/skill interfaces
 - reference skill bundles for navigation, highlighting, warnings, and workspace editing
 - first `guided_reading` capability with strategy text stored outside Core modules
@@ -102,6 +103,8 @@ Do **not** collapse these concepts back into one “agent profile” abstraction
 - `docs/document_ir_contract_v1.md`
 - `docs/runtime_api_contract_v1.md`
 - `docs/workspace_session_contract_v1.md`
+- `docs/workspace_sandbox_design_v1.md`
+- `docs/workspace_profile_design_v1.md`
 - `docs/codex_adapter_design_v1.md`
 - `docs/codex_adapter_execution_checklist_v1.md`
 - `docs/codex_direct_library_integration_v1.md`
@@ -115,6 +118,9 @@ Do **not** collapse these concepts back into one “agent profile” abstraction
 - `src/docwright/core/session.py`
 - `src/docwright/workspace/models.py`
 - `src/docwright/workspace/compiler.py`
+- `src/docwright/workspace/templates.py`
+- `src/docwright/workspace/profiles.py`
+- `src/docwright/workspace/registry.py`
 - `src/docwright/workspace/session.py`
 - `src/docwright/protocol/commands.py`
 - `src/docwright/protocol/events.py`
@@ -122,6 +128,7 @@ Do **not** collapse these concepts back into one “agent profile” abstraction
 - `src/docwright/document/interfaces.py`
 - `src/docwright/document/handles.py`
 - `src/docwright/document/ir_loader.py`
+- `src/docwright/document/facade.py`
 - `src/docwright/adapters/agent/base.py`
 - `src/docwright/adapters/agent/codex.py`
 - `src/docwright/adapters/agent/codex_prompting.py`
@@ -160,9 +167,10 @@ The following architectural decisions are already made and should be treated as 
    - Agent Adapter
    - Capability Profile
    - Skill / Tool Bundle
-5. The old annotation sandbox should become a **workspace session** abstraction.
-6. PDF->IR quality is **not** owned by Core.
-7. Real `DocumentIR` fixtures may be consumed by Core tests, but ingest quality remains an upstream concern.
+5. The old annotation sandbox should become a **workspace session** abstraction, with annotation-first semantics and a later sandbox backend split.
+6. Workspace should remain a general controlled editing framework; annotation is its first strong special case and should evolve through declarative workspace profiles.
+7. PDF->IR quality is **not** owned by Core.
+8. Real `DocumentIR` fixtures may be consumed by Core tests, but ingest quality remains an upstream concern.
 
 ---
 
@@ -178,6 +186,8 @@ The following are now implemented as part of the current Core baseline:
 - workspace state machine baseline
 - compile result + compile error models
 - workspace read/write/patch/compile/submit lifecycle
+- declarative workspace template/profile/registry skeleton
+- runtime-level workspace profile/template resolution with structured workspace metadata
 - protocol command/event models and serialization helpers
 - document handle protocols/interfaces
 - in-memory fake document handles for tests
@@ -203,14 +213,26 @@ Still intentionally incomplete / future work:
 
 ## 6.5 Package install shape
 
-DocWright is now packaged as an installable Python package.
+DocWright is now packaged as an installable Python package named `docwright`.
+
+Current install shape:
+- `pip install docwright`
+- `pip install 'docwright[document]'`
+- `pip install 'docwright[latex]'`
+- `pip install 'docwright[full]'`
 
 Recommended installed imports:
 - `from docwright.codex.entry import DocWrightCodexEntry`
 - `from docwright.codex.samples.attention_fixture import build_attention_fixture_entry` (optional sample only)
+- `from docwright import document`
 
 The sample helper must remain optional; the stable integration contract is still
 `DocWrightCodexEntry.from_document(...)`.
+
+The `docwright.document` package now acts as a unified facade:
+- lightweight in-repo IR loading stays available by default
+- optional document conversion should be lazy-loaded from a future external backend
+- importing `docwright` or `docwright.document` should remain safe when that backend is absent
 
 ---
 
