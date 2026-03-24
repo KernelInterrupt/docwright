@@ -9,6 +9,7 @@ from docwright.adapters.agent.codex_types import (
     CodexTraceRecord,
 )
 from docwright.adapters.transport.codex_library import CodexLibraryBridge
+from docwright.adapters.transport.runtime_host import RuntimeHostBridge
 from docwright.capabilities.guided_reading import GuidedReadingCapability
 from docwright.capabilities.manual_task import ManualTaskCapability
 from docwright.core.guardrails import GuardrailViolationError
@@ -47,8 +48,12 @@ def make_session() -> RuntimeSession:
     )
 
 
-def test_codex_library_bridge_exports_current_step_and_tool_names() -> None:
-    bridge = CodexLibraryBridge(session=make_session(), capability=GuidedReadingCapability())
+def test_codex_library_bridge_is_kept_as_compatibility_alias() -> None:
+    assert CodexLibraryBridge is RuntimeHostBridge
+
+
+def test_runtime_host_bridge_exports_current_step_and_tool_names() -> None:
+    bridge = RuntimeHostBridge(session=make_session(), capability=GuidedReadingCapability())
 
     contract = bridge.export_step()
 
@@ -57,8 +62,8 @@ def test_codex_library_bridge_exports_current_step_and_tool_names() -> None:
     assert bridge.available_tool_names()[:4] == ("current_node", "get_context", "search_text", "advance")
 
 
-def test_codex_library_bridge_executes_tools_and_refreshes_step_contract() -> None:
-    bridge = CodexLibraryBridge(session=make_session(), capability=ManualTaskCapability())
+def test_runtime_host_bridge_executes_tools_and_refreshes_step_contract() -> None:
+    bridge = RuntimeHostBridge(session=make_session(), capability=ManualTaskCapability())
 
     results = bridge.execute_tool_calls(
         (
@@ -73,8 +78,8 @@ def test_codex_library_bridge_executes_tools_and_refreshes_step_contract() -> No
     assert "Current node: node-2" in refreshed.turn_prompt
 
 
-def test_codex_library_bridge_records_output_and_terminal_state() -> None:
-    bridge = CodexLibraryBridge(session=make_session(), capability=ManualTaskCapability())
+def test_runtime_host_bridge_records_output_and_terminal_state() -> None:
+    bridge = RuntimeHostBridge(session=make_session(), capability=ManualTaskCapability())
 
     bridge.execute_tool_call(CodexToolCall(call_id="1", name="advance"))
     bridge.execute_tool_call(CodexToolCall(call_id="2", name="advance"))
@@ -84,10 +89,10 @@ def test_codex_library_bridge_records_output_and_terminal_state() -> None:
     assert bridge.session.events()[-1].as_protocol_event().event_name == "adapter.codex_output"
 
 
-def test_codex_library_bridge_emits_streaming_and_runtime_hooks() -> None:
+def test_runtime_host_bridge_emits_streaming_and_runtime_hooks() -> None:
     collector = EventCollector()
     adapter = CodexAdapter(observers=(collector,))
-    bridge = CodexLibraryBridge(
+    bridge = RuntimeHostBridge(
         session=make_session(),
         capability=ManualTaskCapability(),
         adapter=adapter,
@@ -114,7 +119,7 @@ def test_codex_library_bridge_emits_streaming_and_runtime_hooks() -> None:
     assert collector.events[6].payload["events"][-1]["name"] == "adapter.codex_output"
 
 
-def test_codex_library_bridge_emits_failed_tool_hook_and_reraises() -> None:
+def test_runtime_host_bridge_emits_failed_tool_hook_and_reraises() -> None:
     collector = EventCollector()
     adapter = CodexAdapter(observers=(collector,))
     guarded_session = RuntimeSession(
@@ -128,7 +133,7 @@ def test_codex_library_bridge_emits_failed_tool_hook_and_reraises() -> None:
         ),
         guardrail_policy=GuidedReadingCapability().guardrail_policy(),
     )
-    bridge = CodexLibraryBridge(
+    bridge = RuntimeHostBridge(
         session=guarded_session,
         capability=GuidedReadingCapability(),
         adapter=adapter,
@@ -142,10 +147,10 @@ def test_codex_library_bridge_emits_failed_tool_hook_and_reraises() -> None:
     assert collector.events[-1].payload["error"]["type"] == "GuardrailViolationError"
 
 
-def test_codex_library_bridge_tracks_usage_and_trace_records() -> None:
+def test_runtime_host_bridge_tracks_usage_and_trace_records() -> None:
     traces = TraceCollector()
     adapter = CodexAdapter(trace_sinks=(traces,))
-    bridge = CodexLibraryBridge(
+    bridge = RuntimeHostBridge(
         session=make_session(),
         capability=ManualTaskCapability(),
         adapter=adapter,
@@ -184,8 +189,8 @@ def test_codex_library_bridge_tracks_usage_and_trace_records() -> None:
     assert traces.records[1].payload["text_delta"] == "abc"
 
 
-def test_codex_library_bridge_exposes_render_trace_for_completed_tool_calls() -> None:
-    bridge = CodexLibraryBridge(session=make_session(), capability=ManualTaskCapability())
+def test_runtime_host_bridge_exposes_render_trace_for_completed_tool_calls() -> None:
+    bridge = RuntimeHostBridge(session=make_session(), capability=ManualTaskCapability())
 
     bridge.execute_tool_call(CodexToolCall(call_id="1", name="current_node"))
     bridge.execute_tool_call(CodexToolCall(call_id="2", name="advance"))
@@ -199,7 +204,7 @@ def test_codex_library_bridge_exposes_render_trace_for_completed_tool_calls() ->
     assert render_trace.operations[1].output["node"]["node_id"] == "node-2"
 
 
-def test_codex_library_bridge_records_failed_tool_calls_in_render_trace() -> None:
+def test_runtime_host_bridge_records_failed_tool_calls_in_render_trace() -> None:
     guarded_session = RuntimeSession(
         RuntimeSessionModel(session_id="session-1", run_id="run-1", document_id="doc-1"),
         document=InMemoryDocument.from_nodes(
@@ -211,7 +216,7 @@ def test_codex_library_bridge_records_failed_tool_calls_in_render_trace() -> Non
         ),
         guardrail_policy=GuidedReadingCapability().guardrail_policy(),
     )
-    bridge = CodexLibraryBridge(session=guarded_session, capability=GuidedReadingCapability())
+    bridge = RuntimeHostBridge(session=guarded_session, capability=GuidedReadingCapability())
 
     with pytest.raises(GuardrailViolationError):
         bridge.execute_tool_call(CodexToolCall(call_id="1", name="advance"))

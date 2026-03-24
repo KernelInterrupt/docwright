@@ -6,7 +6,7 @@ from docwright.adapters.transport.codex_exports import (
     build_codex_transcript_fixture,
     serialize_codex_contract,
 )
-from docwright.adapters.transport.codex_library import CodexLibraryBridge
+from docwright.adapters.transport.runtime_host import RuntimeHostBridge
 from docwright.capabilities.guided_reading import GuidedReadingCapability
 from docwright.capabilities.manual_task import ManualTaskCapability
 from docwright.core.models import RuntimeSessionModel
@@ -36,7 +36,7 @@ def load_fixture(name: str) -> dict:
 
 
 def test_guided_reading_contract_fixture_matches_live_export() -> None:
-    bridge = CodexLibraryBridge(session=make_session(), capability=GuidedReadingCapability())
+    bridge = RuntimeHostBridge(session=make_session(), capability=GuidedReadingCapability())
 
     contract = serialize_codex_contract(bridge.export_step())
 
@@ -44,7 +44,7 @@ def test_guided_reading_contract_fixture_matches_live_export() -> None:
 
 
 def test_manual_task_transcript_fixture_matches_live_bridge_flow() -> None:
-    bridge = CodexLibraryBridge(session=make_session(), capability=ManualTaskCapability())
+    bridge = RuntimeHostBridge(session=make_session(), capability=ManualTaskCapability())
     contract = bridge.export_step()
     tool_calls = (
         CodexToolCall(call_id="call-1", name="current_node"),

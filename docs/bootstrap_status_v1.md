@@ -135,7 +135,7 @@ Do **not** collapse these concepts back into one “agent profile” abstraction
 - `src/docwright/adapters/agent/codex_tools.py`
 - `src/docwright/adapters/agent/codex_types.py`
 - `src/docwright/adapters/transport/headless.py`
-- `src/docwright/adapters/transport/codex_library.py`
+- `src/docwright/adapters/transport/runtime_host.py`
 - `src/docwright/codex/entry.py`
 - `src/docwright/adapters/transport/codex_exports.py`
 - `src/docwright/capabilities/base.py`

@@ -63,7 +63,7 @@ Owns the bridge surface:
 - emit observer hooks for streaming/runtime lifecycle integration
 - optionally run an in-process test harness without hard-coding any provider SDK
 
-### `src/docwright/adapters/transport/codex_library.py`
+### `src/docwright/adapters/transport/runtime_host.py`
 Provides a thin direct-library helper for Codex hosts that want a Playwright-like
 object surface around one live runtime session, including usage snapshots.
 

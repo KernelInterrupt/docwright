@@ -16,7 +16,7 @@ from docwright.adapters.agent.codex_types import (
     CodexToolResult,
     CodexUsageSnapshot,
 )
-from docwright.adapters.transport.codex_library import CodexLibraryBridge
+from docwright.adapters.transport.runtime_host import RuntimeHostBridge
 from docwright.core.guardrails import RuntimeGuardrailPolicy, RuntimePermissions
 from docwright.core.models import RuntimeSessionModel
 from docwright.core.session import RuntimeSession
@@ -32,7 +32,7 @@ class DocWrightCodexEntry:
     """Minimal setup wrapper for launching Codex against a DocWright session."""
 
     session: RuntimeSession
-    bridge: CodexLibraryBridge
+    bridge: RuntimeHostBridge
     capability: CapabilityProfile | None = None
 
     @classmethod
@@ -68,7 +68,7 @@ class DocWrightCodexEntry:
             guardrail_policy=resolved_guardrail_policy,
             workspace_compiler=workspace_compiler,
         )
-        bridge = CodexLibraryBridge(
+        bridge = RuntimeHostBridge(
             session=session,
             capability=capability,
             adapter=resolved_adapter,

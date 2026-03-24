@@ -59,16 +59,16 @@ Current responsibilities:
 - `record_output(...)`
 - `usage_snapshot()`
 
-### `CodexLibraryBridge`
+### `RuntimeHostBridge`
 Small host-facing helper in:
-- `src/docwright/adapters/transport/codex_library.py`
+- `src/docwright/adapters/transport/runtime_host.py`
 
 This wraps a live:
 - `RuntimeSession`
 - optional `CapabilityProfile`
 - `CodexAdapter`
 
-and exposes a direct-library host flow.
+and exposes a direct-library host flow. Older `CodexLibraryBridge` imports remain available as a compatibility alias.
 
 ### `DocWrightCodexEntry`
 Launch-oriented setup helper in:
@@ -92,7 +92,7 @@ A minimal host loop is:
 1. create a `RuntimeSession`
 2. choose a `CapabilityProfile`
 3. import `DocWrightCodexEntry` from `docwright.codex.entry` and create `DocWrightCodexEntry.from_document(...)`
-   (or drop to `CodexLibraryBridge(...)` only when you already own the runtime session)
+   (or drop to `RuntimeHostBridge(...)` only when you already own the runtime session)
 4. call `export_step()`
 5. give Codex:
    - `instructions`
@@ -111,7 +111,7 @@ A minimal host loop is:
 ## 4. Example
 
 ```python
-bridge = CodexLibraryBridge(session=session, capability=capability)
+bridge = RuntimeHostBridge(session=session, capability=capability)
 contract = bridge.export_step()
 
 # host gives Codex these values
