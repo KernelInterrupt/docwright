@@ -35,6 +35,7 @@ Implemented baseline capabilities now include:
 - executable workspace template/profile rules with assembled-source views and locked-shell enforcement
 - compile result/error contracts, concrete LaTeX compiler profiles, and artifact-aware compiler boundary
 - local-process sandbox backend for workspace compilation
+- bubblewrap-backed strong sandbox backend option for supported hosts
 - protocol command/event schemas plus serialization helpers
 - document handle interfaces plus in-memory fake handles
 - lazy `docwright.document` facade for optional document-conversion backends
@@ -108,6 +109,7 @@ Do **not** collapse these concepts back into one “agent profile” abstraction
 - `docs/workspace_sandbox_design_v1.md`
 - `docs/workspace_profile_design_v1.md`
 - `docs/workspace_completion_checklist_v1.md`
+- `docs/workspace_secure_sandbox_design_v1.md`
 - `docs/codex_adapter_design_v1.md`
 - `docs/codex_adapter_execution_checklist_v1.md`
 - `docs/codex_direct_library_integration_v1.md`
@@ -213,7 +215,7 @@ Still intentionally incomplete / future work:
 - concrete provider-specific adapters
 - frontend/service transport layers
 - full parser/document package split
-- additional compiler/sandbox backends beyond the current local-process + LaTeX baseline
+- additional compiler/sandbox backends beyond the current local-process + bubblewrap + LaTeX baseline
 - broader capability catalog beyond the current guided-reading/manual-task baseline
 
 ---

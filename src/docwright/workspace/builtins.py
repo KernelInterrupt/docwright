@@ -7,7 +7,7 @@ from pathlib import Path
 from docwright.workspace.latex import LatexWorkspaceCompiler
 from docwright.workspace.profiles import WorkspaceProfile
 from docwright.workspace.registry import WorkspaceProfileRegistry
-from docwright.workspace.sandbox import LocalProcessSandboxBackend, SandboxPolicy
+from docwright.workspace.sandbox import BubblewrapSandboxBackend, LocalProcessSandboxBackend, SandboxPolicy
 from docwright.workspace.templates import EditableRegionSpec, WorkspaceTemplate
 
 DOCWRIGHT_BODY_START = "% DOCWRIGHT:BODY_START"
@@ -72,6 +72,21 @@ def build_local_latex_workspace_compiler(
 
     return LatexWorkspaceCompiler(
         sandbox=LocalProcessSandboxBackend(base_dir=Path(base_dir) if base_dir is not None else None),
+        profile=profile,
+        sandbox_policy=sandbox_policy,
+    )
+
+
+def build_bubblewrap_latex_workspace_compiler(
+    *,
+    profile: str = "tectonic",
+    base_dir: str | None = None,
+    sandbox_policy: SandboxPolicy | None = None,
+) -> LatexWorkspaceCompiler:
+    """Create a bubblewrap-backed LaTeX workspace compiler for stronger isolation."""
+
+    return LatexWorkspaceCompiler(
+        sandbox=BubblewrapSandboxBackend(base_dir=Path(base_dir) if base_dir is not None else None),
         profile=profile,
         sandbox_policy=sandbox_policy,
     )
