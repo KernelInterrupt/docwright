@@ -16,7 +16,7 @@ from docwright.adapters.agent.codex_types import (
     CodexToolResult,
     CodexUsageSnapshot,
 )
-from docwright.adapters.transport.runtime_host import RuntimeHostBridge
+from docwright.adapters.transport.codex_host import CodexHostBridge
 from docwright.core.guardrails import RuntimeGuardrailPolicy, RuntimePermissions
 from docwright.core.models import RuntimeSessionModel
 from docwright.core.session import RuntimeSession
@@ -25,6 +25,7 @@ if TYPE_CHECKING:
     from docwright.capabilities.base import CapabilityProfile
     from docwright.document.interfaces import DocumentHandle
     from docwright.workspace.compiler import WorkspaceCompiler
+    from docwright.workspace.registry import WorkspaceProfileRegistry
 
 
 @dataclass(slots=True)
@@ -32,7 +33,7 @@ class DocWrightCodexEntry:
     """Minimal setup wrapper for launching Codex against a DocWright session."""
 
     session: RuntimeSession
-    bridge: RuntimeHostBridge
+    bridge: CodexHostBridge
     capability: CapabilityProfile | None = None
 
     @classmethod
@@ -46,6 +47,7 @@ class DocWrightCodexEntry:
         permissions: RuntimePermissions | None = None,
         guardrail_policy: RuntimeGuardrailPolicy | None = None,
         workspace_compiler: WorkspaceCompiler | None = None,
+        workspace_registry: WorkspaceProfileRegistry | None = None,
         adapter: CodexAdapter | None = None,
     ) -> "DocWrightCodexEntry":
         """Construct a runtime session + bridge pair from a document handle."""
@@ -67,8 +69,9 @@ class DocWrightCodexEntry:
             permissions=permissions,
             guardrail_policy=resolved_guardrail_policy,
             workspace_compiler=workspace_compiler,
+            workspace_registry=workspace_registry,
         )
-        bridge = RuntimeHostBridge(
+        bridge = CodexHostBridge(
             session=session,
             capability=capability,
             adapter=resolved_adapter,

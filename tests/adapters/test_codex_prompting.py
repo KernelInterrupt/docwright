@@ -36,6 +36,10 @@ def test_prompt_assembler_renders_capability_and_context() -> None:
     turn_prompt = assembler.build_turn_prompt(session)
 
     assert "Codex-side agent operating DocWright through tools" in instructions
+    assert "Do not treat raw IR JSON as the main interaction surface" in instructions
+    assert "Tool arguments must match the published schemas exactly" in instructions
+    assert "open_workspace -> describe_workspace -> read_source/read_body -> write_body/patch_body -> compile -> submit" in instructions
+    assert "search headings, jump intentionally, and follow preserved internal links" in instructions
     assert "Active capability: guided_reading" in instructions
     assert "highlight is required before advance" in instructions
     assert "workspace_editing" in instructions

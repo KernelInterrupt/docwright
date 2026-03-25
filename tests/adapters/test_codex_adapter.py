@@ -78,6 +78,8 @@ def test_codex_adapter_exports_step_contract(tmp_path: Path) -> None:
     assert contract.metadata == {
         "session_id": "session-1",
         "run_id": "run-1",
+        "document_id": "doc-1",
+        "current_node_id": "node-1",
         "capability": "guided_reading",
         "adapter": "codex",
     }

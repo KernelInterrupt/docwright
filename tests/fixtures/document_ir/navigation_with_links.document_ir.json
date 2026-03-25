@@ -1,0 +1,91 @@
+{
+  "document_id": "navigation_with_links.pdf",
+  "root_id": "doc_root",
+  "metadata": {
+    "title": "Navigation With Links"
+  },
+  "nodes": {
+    "doc_root": {
+      "id": "doc_root",
+      "kind": "document",
+      "parent_id": null,
+      "children": ["sec_intro", "sec_device_a", "sec_device_b"],
+      "order_index": 0,
+      "title": "Navigation With Links"
+    },
+    "sec_intro": {
+      "id": "sec_intro",
+      "kind": "section",
+      "parent_id": "doc_root",
+      "children": ["para_intro"],
+      "order_index": 1,
+      "title": "Overview"
+    },
+    "para_intro": {
+      "id": "para_intro",
+      "kind": "paragraph",
+      "parent_id": "sec_intro",
+      "children": [],
+      "order_index": 2,
+      "provenance": {"source_kind": "pdf", "pdf_page": 1},
+      "text": "This manual covers many models. Jump to Device B if that is your product.",
+      "spans": []
+    },
+    "sec_device_a": {
+      "id": "sec_device_a",
+      "kind": "section",
+      "parent_id": "doc_root",
+      "children": ["para_device_a"],
+      "order_index": 3,
+      "title": "Device A"
+    },
+    "para_device_a": {
+      "id": "para_device_a",
+      "kind": "paragraph",
+      "parent_id": "sec_device_a",
+      "children": [],
+      "order_index": 4,
+      "provenance": {"source_kind": "pdf", "pdf_page": 2},
+      "text": "Device A setup steps are listed here.",
+      "spans": []
+    },
+    "sec_device_b": {
+      "id": "sec_device_b",
+      "kind": "section",
+      "parent_id": "doc_root",
+      "children": ["para_device_b"],
+      "order_index": 5,
+      "title": "Device B"
+    },
+    "para_device_b": {
+      "id": "para_device_b",
+      "kind": "paragraph",
+      "parent_id": "sec_device_b",
+      "children": [],
+      "order_index": 6,
+      "provenance": {"source_kind": "pdf", "pdf_page": 3},
+      "text": "Device B setup steps are listed here.",
+      "spans": []
+    }
+  },
+  "reading_order": [
+    "sec_intro",
+    "para_intro",
+    "sec_device_a",
+    "para_device_a",
+    "sec_device_b",
+    "para_device_b"
+  ],
+  "relations": [
+    {
+      "relation_id": "rel_link_0001",
+      "kind": "internal_link_to",
+      "source_id": "para_intro",
+      "target_id": "sec_device_b",
+      "score": 0.93,
+      "provenance": {
+        "strategy": "fixture"
+      }
+    }
+  ]
+}

@@ -1,11 +1,11 @@
 {
   "contract": {
-    "instructions": "You are a Codex-side agent operating DocWright through tools.\n\nUse the provided tools to inspect runtime state and perform document actions.\n\nDo not invent document structure, workspace contents, or step state.\n\nActive capability: manual_task - Manual document task mode with relaxed runtime guardrails.\n\nGuardrails: max 1 workspace open per step\n\nActive skill bundles:\n- navigation: current_node, get_context, search_text, advance\n- highlighting: highlight\n- warnings: warning\n- workspace_editing: open_workspace, describe_workspace, read_body, write_body, patch_body, compile, submit\n\nRuntime identifiers: session=session-1, run=run-1.\n\nWork one DocWright step at a time. Prefer structured tool calls over free-form explanation.",
+    "instructions": "You are a Codex-side agent operating DocWright through tools.\n\nUse the provided tools to inspect runtime state and perform document actions.\n\nDo not invent document structure, workspace contents, or step state.\n\nDo not treat raw IR JSON as the main interaction surface; use exported runtime tools instead.\n\nTool arguments must match the published schemas exactly and must not include extra keys.\n\nFor reading, usually call current_node first, then get_context and/or search_text, then advance.\n\nFor non-linear documents, inspect structure, search headings, jump intentionally, and follow preserved internal links instead of forcing sequential traversal.\n\nFor workspace edits, use the controlled lifecycle: open_workspace -> describe_workspace -> read_source/read_body -> write_body/patch_body -> compile -> submit.\n\nActive capability: manual_task - Manual document task mode with relaxed runtime guardrails.\n\nGuardrails: max 1 workspace open per step\n\nActive skill bundles:\n- navigation: current_node, get_context, search_text, advance, get_structure, search_headings, jump_to_node, list_internal_links, follow_internal_link\n- highlighting: highlight\n- warnings: warning\n- workspace_editing: open_workspace, describe_workspace, read_source, read_body, write_body, patch_body, compile, submit\n\nRuntime identifiers: session=session-1, run=run-1.\n\nWork one DocWright step at a time. Prefer structured tool calls over free-form explanation.",
     "turn_prompt": "Run one DocWright step for session session-1.\nCurrent node: node-1 (paragraph) on page 1.\nNode text preview: alpha\nLocal context -> before: <none>; after: node-2.",
     "tools": [
       {
         "name": "current_node",
-        "description": "Inspect the current DocWright node before taking any action.",
+        "description": "Inspect the current DocWright node. This is usually the first call in each step.",
         "input_schema": {
           "type": "object",
           "properties": {},
@@ -14,7 +14,7 @@
       },
       {
         "name": "get_context",
-        "description": "Read nearby node IDs around the current node to understand local context.",
+        "description": "Read nearby reading-order node IDs around the current node for local context.",
         "input_schema": {
           "type": "object",
           "properties": {
@@ -34,7 +34,7 @@
       },
       {
         "name": "search_text",
-        "description": "Search runtime-visible document text by keyword before navigating manually.",
+        "description": "Search runtime-visible document text by keyword, optionally within a narrower scope or selected node kinds.",
         "input_schema": {
           "type": "object",
           "properties": {
@@ -45,6 +45,21 @@
               "type": "integer",
               "minimum": 1,
               "default": 10
+            },
+            "scope": {
+              "type": "string",
+              "enum": [
+                "document",
+                "current_subtree",
+                "current_page"
+              ],
+              "default": "document"
+            },
+            "node_kinds": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
             }
           },
           "required": [
@@ -55,7 +70,7 @@
       },
       {
         "name": "advance",
-        "description": "Move to the next node in reading order after satisfying runtime guardrails.",
+        "description": "Move to the next node in reading order only after the current step is complete and runtime guardrails are satisfied.",
         "input_schema": {
           "type": "object",
           "properties": {},
@@ -63,8 +78,99 @@
         }
       },
       {
+        "name": "get_structure",
+        "description": "Inspect parent/children/siblings/ancestry metadata for the current node without changing runtime focus.",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "node_id": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "search_headings",
+        "description": "Search structural heading/section nodes when the task is to locate a relevant part of the document rather than scan sequentially.",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string"
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 10
+            },
+            "scope": {
+              "type": "string",
+              "enum": [
+                "document",
+                "current_subtree",
+                "current_page"
+              ],
+              "default": "document"
+            }
+          },
+          "required": [
+            "query"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "jump_to_node",
+        "description": "Reposition runtime focus to a target node or section so later reads/searches continue from there.",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "node_id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "node_id"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "list_internal_links",
+        "description": "List outgoing internal PDF-style links from the current node when the IR preserved hyperlink relations.",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "node_id": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "follow_internal_link",
+        "description": "Follow one preserved internal-link relation and update runtime focus to the resolved target node.",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "relation_id": {
+              "type": "string"
+            },
+            "node_id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "relation_id"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
         "name": "highlight",
-        "description": "Mark the current node with a structured highlight level and optional reason.",
+        "description": "Mark the current node with a structured highlight level and optional reason before advancing when the active capability requires it.",
         "input_schema": {
           "type": "object",
           "properties": {
@@ -83,7 +189,7 @@
       },
       {
         "name": "warning",
-        "description": "Raise a structured warning with severity, message, and supporting evidence.",
+        "description": "Raise a structured warning on the current node with severity, message, and supporting evidence node IDs or snippets.",
         "input_schema": {
           "type": "object",
           "properties": {
@@ -113,7 +219,7 @@
       },
       {
         "name": "open_workspace",
-        "description": "Open a controlled editing workspace anchored to the current node.",
+        "description": "Open a controlled editing workspace anchored to the current node and return its workspace_id.",
         "input_schema": {
           "type": "object",
           "properties": {
@@ -150,7 +256,23 @@
       },
       {
         "name": "describe_workspace",
-        "description": "Return the workspace rules, readiness, and editable-region metadata.",
+        "description": "Return workspace rules, readiness, editable-region metadata, and the current workspace_id.",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "workspace_id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "workspace_id"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "read_source",
+        "description": "Read the assembled workspace source, including the locked template shell around the editable region.",
         "input_schema": {
           "type": "object",
           "properties": {
@@ -166,7 +288,7 @@
       },
       {
         "name": "read_body",
-        "description": "Read the editable workspace body before making changes.",
+        "description": "Read only the editable workspace body before making changes.",
         "input_schema": {
           "type": "object",
           "properties": {
@@ -182,7 +304,7 @@
       },
       {
         "name": "write_body",
-        "description": "Replace the editable workspace body with new content.",
+        "description": "Replace the editable workspace body with new content that stays inside the allowed editable region.",
         "input_schema": {
           "type": "object",
           "properties": {
@@ -202,7 +324,7 @@
       },
       {
         "name": "patch_body",
-        "description": "Apply a targeted string replacement inside the editable workspace body.",
+        "description": "Apply one targeted string replacement inside the editable workspace body only.",
         "input_schema": {
           "type": "object",
           "properties": {
@@ -226,7 +348,7 @@
       },
       {
         "name": "compile",
-        "description": "Compile the workspace body and return structured success or error details.",
+        "description": "Compile the current workspace body and return structured success or error details plus the workspace_id.",
         "input_schema": {
           "type": "object",
           "properties": {
@@ -242,7 +364,7 @@
       },
       {
         "name": "submit",
-        "description": "Submit the workspace after a successful compile completes.",
+        "description": "Submit the workspace only after the workspace is ready for submission.",
         "input_schema": {
           "type": "object",
           "properties": {
@@ -260,6 +382,8 @@
     "metadata": {
       "session_id": "session-1",
       "run_id": "run-1",
+      "document_id": "doc-1",
+      "current_node_id": "node-1",
       "capability": "manual_task",
       "adapter": "codex"
     }
@@ -293,6 +417,7 @@
           "node_id": "node-1",
           "kind": "paragraph",
           "page_number": 1,
+          "parent_node_id": null,
           "text": "alpha",
           "relations": []
         }
@@ -318,6 +443,7 @@
           "node_id": "node-2",
           "kind": "paragraph",
           "page_number": 1,
+          "parent_node_id": null,
           "text": "beta",
           "relations": []
         }

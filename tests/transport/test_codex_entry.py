@@ -34,6 +34,8 @@ def test_codex_entry_builds_runtime_session_and_bridge_from_document() -> None:
     assert entry.session.model.capability_name == "manual_task"
     assert entry.session.model.adapter_name == "codex"
     assert contract.metadata["session_id"] == "session-x"
+    assert contract.metadata["document_id"] == "doc-1"
+    assert contract.metadata["current_node_id"] == "node-1"
     assert contract.metadata["capability"] == "manual_task"
 
 

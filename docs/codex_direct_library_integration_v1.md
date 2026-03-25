@@ -9,6 +9,24 @@ The important idea is:
 - DocWright is the library/runtime being called
 - `AGENTS.md` is guidance only
 - MCP is optional, not required for the first integration path
+- the official sample document is **Attention Is All You Need**
+
+---
+
+## 0. Canonical sample and canonical entry
+
+When demonstrating the host integration, the default sample is always:
+
+- `tests/fixtures/document_ir/attention_is_all_you_need.document_ir.json`
+
+When bootstrapping the host integration, the canonical entry is always:
+
+```python
+DocWrightCodexEntry.from_document(document, ...)
+```
+
+The optional packaged Attention helper is only for convenience. It does not
+replace the main entry contract.
 
 ---
 
@@ -59,16 +77,16 @@ Current responsibilities:
 - `record_output(...)`
 - `usage_snapshot()`
 
-### `RuntimeHostBridge`
-Small host-facing helper in:
-- `src/docwright/adapters/transport/runtime_host.py`
+### `CodexHostBridge`
+Canonical host-facing helper in:
+- `src/docwright/adapters/transport/codex_host.py`
 
 This wraps a live:
 - `RuntimeSession`
 - optional `CapabilityProfile`
 - `CodexAdapter`
 
-and exposes a direct-library host flow. Older `CodexLibraryBridge` imports remain available as a compatibility alias.
+and exposes the current direct-library host flow. Older `RuntimeHostBridge` and `CodexLibraryBridge` imports remain available as compatibility aliases.
 
 ### `DocWrightCodexEntry`
 Launch-oriented setup helper in:
@@ -92,7 +110,7 @@ A minimal host loop is:
 1. create a `RuntimeSession`
 2. choose a `CapabilityProfile`
 3. import `DocWrightCodexEntry` from `docwright.codex.entry` and create `DocWrightCodexEntry.from_document(...)`
-   (or drop to `RuntimeHostBridge(...)` only when you already own the runtime session)
+   (or drop to `CodexHostBridge(...)` only when you already own the runtime session)
 4. call `export_step()`
 5. give Codex:
    - `instructions`
@@ -106,24 +124,61 @@ A minimal host loop is:
 11. inspect `usage_snapshot()` if the host wants counters/tracing summaries
 12. repeat until the DocWright session is terminal
 
+### 3.1 Recommended operating rules for lower tool-call error rate
+
+The host guidance should keep these rules stable:
+
+1. do not treat raw IR JSON as the main interaction surface
+2. always use exported tool schemas as the source of truth
+3. for sequential reading, prefer:
+   - `current_node`
+   - `get_context` and/or `search_text`
+   - `advance`
+4. for non-linear documents, prefer:
+   - `current_node`
+   - `get_structure`
+   - `search_headings` and/or scoped `search_text`
+   - `jump_to_node` or `follow_internal_link`
+5. for controlled edits, prefer:
+   - `open_workspace`
+   - `describe_workspace`
+   - `read_source` and/or `read_body`
+   - `write_body` or `patch_body`
+   - `compile`
+   - `submit`
+6. treat `AGENTS.md` as repository guidance only, never as runtime state
+
 ---
 
 ## 4. Example
 
 ```python
-bridge = RuntimeHostBridge(session=session, capability=capability)
-contract = bridge.export_step()
+from docwright.document import load_in_memory_document_from_ir_path
+from docwright.codex.entry import DocWrightCodexEntry
+from docwright.capabilities.manual_task import ManualTaskCapability
+from docwright.adapters.agent.codex_types import CodexToolCall
+
+document = load_in_memory_document_from_ir_path(
+    "tests/fixtures/document_ir/attention_is_all_you_need.document_ir.json"
+)
+entry = DocWrightCodexEntry.from_document(
+    document,
+    capability=ManualTaskCapability(),
+    session_id="attention-demo-session",
+    run_id="attention-demo-run",
+)
+contract = entry.export_step()
 
 # host gives Codex these values
 instructions = contract.instructions
 turn_prompt = contract.turn_prompt
 tools = contract.tools
 
-result = bridge.execute_tool_call(
+result = entry.execute_tool_call(
     CodexToolCall(call_id="1", name="current_node", arguments={})
 )
 
-bridge.record_output(output_text="Step complete.", stop_reason="done")
+entry.record_output(output_text="Step complete.", stop_reason="done")
 ```
 
 The host keeps the Codex model loop.

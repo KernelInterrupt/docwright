@@ -1,11 +1,7 @@
-"""Backward-compatible Codex bridge alias.
+"""Backward-compatible Codex bridge alias."""
 
-`RuntimeHostBridge` is the canonical generic host-facing bridge. This module is
-kept as a compatibility import surface for older Codex-specific integrations.
-"""
+from docwright.adapters.transport.codex_host import CodexHostBridge
 
-from docwright.adapters.transport.runtime_host import RuntimeHostBridge
+CodexLibraryBridge = CodexHostBridge
 
-CodexLibraryBridge = RuntimeHostBridge
-
-__all__ = ['CodexLibraryBridge']
+__all__ = ["CodexLibraryBridge"]

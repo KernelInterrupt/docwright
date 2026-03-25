@@ -23,5 +23,5 @@ class HighlightingSkill(SkillBundle):
 
     def tool_descriptions(self) -> dict[str, str]:
         return {
-            "highlight": "Mark the current node with a structured highlight level and optional reason.",
+            "highlight": "Mark the current node with a structured highlight level and optional reason before advancing when the active capability requires it.",
         }

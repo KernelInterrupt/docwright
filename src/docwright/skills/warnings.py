@@ -23,5 +23,5 @@ class WarningSkill(SkillBundle):
 
     def tool_descriptions(self) -> dict[str, str]:
         return {
-            "warning": "Raise a structured warning with severity, message, and supporting evidence.",
+            "warning": "Raise a structured warning on the current node with severity, message, and supporting evidence node IDs or snippets.",
         }

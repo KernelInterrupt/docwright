@@ -15,12 +15,21 @@ from docwright.core.guardrails import (
     RuntimePermissions,
 )
 from docwright.core.models import RuntimeSessionModel, RuntimeSessionStatus
-from docwright.document.interfaces import DocumentHandle, NodeContextSlice, NodeRelationRef, TextSearchHit
+from docwright.document.interfaces import (
+    DocumentHandle,
+    InternalLinkHit,
+    NodeContextSlice,
+    NodeRelationRef,
+    NodeStructureSlice,
+    TextSearchHit,
+)
 from docwright.protocol.events import EventFamily, EventName
 from docwright.workspace.compiler import WorkspaceCompiler
 from docwright.workspace.models import EditableRegion, WorkspaceSessionModel
 from docwright.workspace.registry import WorkspaceProfileRegistry
 from docwright.workspace.session import WorkspaceSession
+
+_STRUCTURAL_KINDS = {"document", "section", "heading", "chapter", "subsection", "subsubsection"}
 
 
 @dataclass(slots=True)
@@ -45,6 +54,10 @@ class RuntimeNodeView:
     @property
     def page_number(self) -> int:
         return getattr(self.raw_node, "page_number")
+
+    @property
+    def parent_node_id(self) -> str | None:
+        return getattr(self.raw_node, "parent_node_id", None)
 
     def text_content(self) -> str | None:
         text_getter = getattr(self.raw_node, "text_content", None)
@@ -202,7 +215,36 @@ class RuntimeSession:
             after_node_ids=tuple(reading_order[index + 1 : index + 1 + after]),
         )
 
-    def search_text(self, query: str, *, limit: int = 10) -> tuple[TextSearchHit, ...]:
+    def get_structure(self, *, node_id: str | None = None) -> NodeStructureSlice:
+        focus_node_id = node_id or self._model.step.node_id
+        if focus_node_id is None:
+            return NodeStructureSlice(focus_node_id="")
+
+        root_id = getattr(self._document, "root_id", None)
+        parent_id = self._get_parent_id(focus_node_id)
+        child_ids = self._get_child_ids(focus_node_id)
+        sibling_ids = self._get_sibling_ids(focus_node_id)
+        ancestry_ids = self._get_ancestry(focus_node_id)
+        section_path_ids, section_path_titles = self._section_path_for_node(focus_node_id)
+        return NodeStructureSlice(
+            focus_node_id=focus_node_id,
+            root_id=root_id if isinstance(root_id, str) else None,
+            parent_node_id=parent_id,
+            child_node_ids=child_ids,
+            sibling_node_ids=sibling_ids,
+            ancestry_node_ids=ancestry_ids,
+            section_path_node_ids=section_path_ids,
+            section_path_titles=section_path_titles,
+        )
+
+    def search_text(
+        self,
+        query: str,
+        *,
+        limit: int = 10,
+        scope: str = "document",
+        node_kinds: tuple[str, ...] | None = None,
+    ) -> tuple[TextSearchHit, ...]:
         """Search runtime-visible IR-backed content by keyword.
 
         This is a runtime query surface. The runtime may internally reuse helper
@@ -214,30 +256,132 @@ class RuntimeSession:
         if not query or limit < 1:
             return ()
 
+        candidate_node_ids = self._candidate_node_ids_for_scope(scope)
+        normalized_kinds = tuple(dict.fromkeys(node_kinds or ()))
+
         backend_search_text = getattr(self._document, "search_text", None)
         if callable(backend_search_text):
-            return tuple(backend_search_text(query, limit=limit))
+            try:
+                return tuple(
+                    backend_search_text(
+                        query,
+                        limit=limit,
+                        scope=scope,
+                        node_ids=candidate_node_ids,
+                        node_kinds=normalized_kinds or None,
+                    )
+                )
+            except TypeError:
+                if scope == "document" and not normalized_kinds:
+                    return tuple(backend_search_text(query, limit=limit))
 
         needle = query.casefold()
+        allowed = set(candidate_node_ids)
+        allowed_kinds = set(normalized_kinds) if normalized_kinds else None
         hits: list[TextSearchHit] = []
         for node_id in self._get_reading_order():
+            if node_id not in allowed:
+                continue
             node = self._get_node(node_id)
-            text_getter = getattr(node, "text_content", None)
-            text = text_getter() if callable(text_getter) else None
+            kind = getattr(node, "kind", "unknown")
+            if allowed_kinds is not None and kind not in allowed_kinds:
+                continue
+            text = self._node_text(node)
             haystack = (text or "").casefold()
             if not haystack or needle not in haystack:
                 continue
+            section_path_ids, section_path_titles = self._section_path_for_node(node_id)
             hits.append(
                 TextSearchHit(
                     node_id=getattr(node, "node_id"),
+                    node_kind=kind,
                     page_number=getattr(node, "page_number", 1),
                     text_preview=(text or "")[:240],
                     match_count=haystack.count(needle),
+                    section_path_node_ids=section_path_ids,
+                    section_path_titles=section_path_titles,
+                    scope=scope,
                 )
             )
             if len(hits) >= limit:
                 break
         return tuple(hits)
+
+    def search_headings(
+        self,
+        query: str,
+        *,
+        limit: int = 10,
+        scope: str = "document",
+    ) -> tuple[TextSearchHit, ...]:
+        return self.search_text(query, limit=limit, scope=scope, node_kinds=tuple(_STRUCTURAL_KINDS))
+
+    def list_internal_links(self, *, node_id: str | None = None) -> tuple[InternalLinkHit, ...]:
+        focus_node_id = node_id or self._model.step.node_id
+        if focus_node_id is None:
+            return ()
+
+        node = self._get_node(focus_node_id)
+        relation_getter = getattr(node, "relations", None)
+        relations = tuple(relation_getter()) if callable(relation_getter) else ()
+        hits: list[InternalLinkHit] = []
+        for relation in relations:
+            if relation.kind != "internal_link_to":
+                continue
+            target_node = self._get_node(relation.target_id)
+            hits.append(
+                InternalLinkHit(
+                    relation_id=relation.relation_id,
+                    source_node_id=focus_node_id,
+                    target_node_id=relation.target_id,
+                    target_kind=getattr(target_node, "kind", "unknown"),
+                    target_page_number=getattr(target_node, "page_number", 1),
+                    target_text_preview=(self._node_text(target_node) or "")[:240],
+                    score=relation.score,
+                )
+            )
+        return tuple(hits)
+
+    def jump_to_node(self, node_id: str) -> RuntimeNodeView | None:
+        self._permissions.ensure_allowed("jump")
+        resolved_focus_id = self._resolve_focusable_node_id(node_id)
+        if resolved_focus_id is None:
+            raise KeyError(f"node '{node_id}' cannot be focused by the runtime")
+        if self._model.step.node_id == resolved_focus_id:
+            return self.current_node()
+
+        index = self._get_reading_order().index(resolved_focus_id)
+        self._model.step.enter_node(index=index, node_id=resolved_focus_id)
+        self._model.status = RuntimeSessionStatus.ACTIVE
+        self.emit_event(
+            EventName(EventFamily.NODE, "jumped"),
+            {
+                "requested_node_id": node_id,
+                "resolved_node_id": resolved_focus_id,
+            },
+        )
+        self.emit_event(EventName(EventFamily.NODE, "entered"))
+        return self.current_node()
+
+    def follow_internal_link(self, relation_id: str, *, node_id: str | None = None) -> RuntimeNodeView | None:
+        focus_node_id = node_id or self._model.step.node_id
+        if focus_node_id is None:
+            raise KeyError("no current node is active")
+
+        for link in self.list_internal_links(node_id=focus_node_id):
+            if link.relation_id != relation_id:
+                continue
+            target = self.jump_to_node(link.target_node_id)
+            self.emit_event(
+                EventName(EventFamily.NODE, "internal_link_followed"),
+                {
+                    "relation_id": relation_id,
+                    "source_node_id": focus_node_id,
+                    "target_node_id": link.target_node_id,
+                },
+            )
+            return target
+        raise KeyError(f"internal link '{relation_id}' was not found for node '{focus_node_id}'")
 
     def record_highlight(self, *, level: str, reason: str | None = None) -> RuntimeEventEnvelope:
         self._permissions.ensure_allowed("highlight")
@@ -438,6 +582,102 @@ class RuntimeSession:
         if reading_order and self._model.step.node_id is None:
             self._model.step.enter_node(index=0, node_id=reading_order[0])
 
+    def _candidate_node_ids_for_scope(self, scope: str) -> tuple[str, ...]:
+        if scope == "document":
+            root_id = getattr(self._document, "root_id", None)
+            subtree_getter = getattr(self._document, "get_subtree_node_ids", None)
+            if isinstance(root_id, str) and callable(subtree_getter):
+                subtree_ids = tuple(subtree_getter(root_id, include_self=False))
+                if subtree_ids:
+                    return subtree_ids
+            return self._get_reading_order()
+
+        current = self.current_node()
+        if current is None:
+            return ()
+
+        if scope == "current_page":
+            try:
+                page = self._document.get_page(current.page_number)
+                return tuple(page.node_ids)
+            except Exception:
+                return (current.node_id,)
+
+        if scope == "current_subtree":
+            subtree_getter = getattr(self._document, "get_subtree_node_ids", None)
+            if callable(subtree_getter):
+                return tuple(subtree_getter(current.node_id, include_self=True))
+            return (current.node_id,)
+
+        raise ValueError(f"unsupported search scope: {scope!r}")
+
+    def _resolve_focusable_node_id(self, requested_node_id: str) -> str | None:
+        reading_order = self._get_reading_order()
+        if requested_node_id in reading_order:
+            return requested_node_id
+
+        subtree_getter = getattr(self._document, "get_subtree_node_ids", None)
+        if callable(subtree_getter):
+            subtree_ids = tuple(subtree_getter(requested_node_id, include_self=False))
+            for node_id in reading_order:
+                if node_id in subtree_ids:
+                    return node_id
+        return None
+
+    def _section_path_for_node(self, node_id: str) -> tuple[tuple[str, ...], tuple[str, ...]]:
+        section_ids: list[str] = []
+        section_titles: list[str] = []
+        for candidate_id in self._get_ancestry(node_id, include_self=True):
+            if candidate_id == getattr(self._document, "root_id", None):
+                continue
+            try:
+                candidate = self._get_node(candidate_id)
+            except Exception:
+                continue
+            kind = getattr(candidate, "kind", "unknown")
+            if kind not in _STRUCTURAL_KINDS:
+                continue
+            section_ids.append(candidate_id)
+            title = self._node_text(candidate)
+            if title:
+                section_titles.append(title[:160])
+        return tuple(section_ids), tuple(section_titles)
+
+    def _get_parent_id(self, node_id: str) -> str | None:
+        getter = getattr(self._document, "get_parent_id", None)
+        if callable(getter):
+            return getter(node_id)
+        node = self._get_node(node_id)
+        return getattr(node, "parent_node_id", None)
+
+    def _get_child_ids(self, node_id: str) -> tuple[str, ...]:
+        getter = getattr(self._document, "get_child_ids", None)
+        if callable(getter):
+            return tuple(getter(node_id))
+        return ()
+
+    def _get_sibling_ids(self, node_id: str) -> tuple[str, ...]:
+        getter = getattr(self._document, "get_sibling_ids", None)
+        if callable(getter):
+            return tuple(getter(node_id))
+        parent_id = self._get_parent_id(node_id)
+        if parent_id is None:
+            return ()
+        return tuple(candidate for candidate in self._get_child_ids(parent_id) if candidate != node_id)
+
+    def _get_ancestry(self, node_id: str, *, include_self: bool = False) -> tuple[str, ...]:
+        getter = getattr(self._document, "get_ancestry", None)
+        if callable(getter):
+            return tuple(getter(node_id, include_self=include_self))
+
+        ancestry: list[str] = []
+        current = node_id if include_self else self._get_parent_id(node_id)
+        while current is not None:
+            ancestry.append(current)
+            current = self._get_parent_id(current)
+        ancestry.reverse()
+        return tuple(ancestry)
+
     def _get_reading_order(self) -> tuple[str, ...]:
         reading_order = getattr(self._document, "reading_order", None)
         if callable(reading_order):
@@ -456,3 +696,7 @@ class RuntimeSession:
         if callable(selector):
             return selector(node_id)
         raise AttributeError("document does not expose get_node/select lookup")
+
+    def _node_text(self, node: object) -> str | None:
+        text_getter = getattr(node, "text_content", None)
+        return text_getter() if callable(text_getter) else None

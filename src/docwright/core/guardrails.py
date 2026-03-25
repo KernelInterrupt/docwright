@@ -40,6 +40,7 @@ class RuntimePermissions:
     allow_warning: bool = True
     allow_open_workspace: bool = True
     allow_advance: bool = True
+    allow_jump: bool = True
 
     def ensure_allowed(self, action: str) -> None:
         allowed = {
@@ -47,6 +48,7 @@ class RuntimePermissions:
             "warning": self.allow_warning,
             "open_workspace": self.allow_open_workspace,
             "advance": self.allow_advance,
+            "jump": self.allow_jump,
         }.get(action)
         if allowed is False:
             raise GuardrailViolationError(

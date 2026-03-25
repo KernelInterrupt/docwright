@@ -10,7 +10,7 @@ from docwright.adapters.agent.codex_types import CodexToolCall, CodexToolResult,
 if TYPE_CHECKING:
     from docwright.capabilities.base import CapabilityProfile
     from docwright.core.session import RuntimeSession
-    from docwright.document.interfaces import TextSearchHit
+    from docwright.document.interfaces import InternalLinkHit, NodeStructureSlice, TextSearchHit
     from docwright.workspace.models import CompileError, CompileResult
     from docwright.workspace.session import WorkspaceSession
 
@@ -25,7 +25,17 @@ class CodexToolRegistry:
         capability: CapabilityProfile | None,
     ) -> tuple[CodexToolSpec, ...]:
         if capability is None:
-            tool_names = ("current_node", "get_context", "advance")
+            tool_names = (
+                "current_node",
+                "get_context",
+                "search_text",
+                "advance",
+                "get_structure",
+                "search_headings",
+                "jump_to_node",
+                "list_internal_links",
+                "follow_internal_link",
+            )
         else:
             tool_names = tuple(
                 tool_name
@@ -90,6 +100,19 @@ class CodexToolRegistry:
             },
         )
 
+    def _spec_get_structure(self) -> CodexToolSpec:
+        return CodexToolSpec(
+            name="get_structure",
+            description="Return hierarchy metadata for the current node or an explicitly requested node.",
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "node_id": {"type": "string"},
+                },
+                "additionalProperties": False,
+            },
+        )
+
     def _spec_search_text(self) -> CodexToolSpec:
         return CodexToolSpec(
             name="search_text",
@@ -99,8 +122,64 @@ class CodexToolRegistry:
                 "properties": {
                     "query": {"type": "string"},
                     "limit": {"type": "integer", "minimum": 1, "default": 10},
+                    "scope": {"type": "string", "enum": ["document", "current_subtree", "current_page"], "default": "document"},
+                    "node_kinds": {"type": "array", "items": {"type": "string"}},
                 },
                 "required": ["query"],
+                "additionalProperties": False,
+            },
+        )
+
+    def _spec_search_headings(self) -> CodexToolSpec:
+        return CodexToolSpec(
+            name="search_headings",
+            description="Search heading/section nodes to locate the relevant structural area of the document.",
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string"},
+                    "limit": {"type": "integer", "minimum": 1, "default": 10},
+                    "scope": {"type": "string", "enum": ["document", "current_subtree", "current_page"], "default": "document"},
+                },
+                "required": ["query"],
+                "additionalProperties": False,
+            },
+        )
+
+    def _spec_jump_to_node(self) -> CodexToolSpec:
+        return CodexToolSpec(
+            name="jump_to_node",
+            description="Move runtime focus to a target node or to the first focusable descendant of a structural node.",
+            input_schema={
+                "type": "object",
+                "properties": {"node_id": {"type": "string"}},
+                "required": ["node_id"],
+                "additionalProperties": False,
+            },
+        )
+
+    def _spec_list_internal_links(self) -> CodexToolSpec:
+        return CodexToolSpec(
+            name="list_internal_links",
+            description="List outgoing internal-link relations for the current node or an explicitly requested node.",
+            input_schema={
+                "type": "object",
+                "properties": {"node_id": {"type": "string"}},
+                "additionalProperties": False,
+            },
+        )
+
+    def _spec_follow_internal_link(self) -> CodexToolSpec:
+        return CodexToolSpec(
+            name="follow_internal_link",
+            description="Follow one internal-link relation and update runtime focus to its resolved target.",
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "relation_id": {"type": "string"},
+                    "node_id": {"type": "string"},
+                },
+                "required": ["relation_id"],
                 "additionalProperties": False,
             },
         )
@@ -175,6 +254,12 @@ class CodexToolRegistry:
         return self._workspace_id_only_tool(
             name="read_body",
             description="Read the editable body from an open workspace session.",
+        )
+
+    def _spec_read_source(self) -> CodexToolSpec:
+        return self._workspace_id_only_tool(
+            name="read_source",
+            description="Read the assembled workspace source, including the locked template shell.",
         )
 
     def _spec_compile(self) -> CodexToolSpec:
@@ -253,11 +338,54 @@ class CodexToolRegistry:
             "after_node_ids": list(context.after_node_ids),
         }
 
+    def _handle_get_structure(self, *, session: RuntimeSession, capability: CapabilityProfile | None, arguments: dict[str, Any]) -> dict[str, Any]:
+        structure = session.get_structure(node_id=arguments.get("node_id"))
+        return {"structure": self._serialize_structure_slice(structure)}
+
     def _handle_search_text(self, *, session: RuntimeSession, capability: CapabilityProfile | None, arguments: dict[str, Any]) -> dict[str, Any]:
-        hits = session.search_text(arguments["query"], limit=int(arguments.get("limit", 10)))
+        hits = session.search_text(
+            arguments["query"],
+            limit=int(arguments.get("limit", 10)),
+            scope=str(arguments.get("scope", "document")),
+            node_kinds=tuple(arguments.get("node_kinds", ())) or None,
+        )
         return {
             "query": arguments["query"],
+            "scope": str(arguments.get("scope", "document")),
             "hits": [self._serialize_search_hit(hit) for hit in hits],
+        }
+
+    def _handle_search_headings(self, *, session: RuntimeSession, capability: CapabilityProfile | None, arguments: dict[str, Any]) -> dict[str, Any]:
+        hits = session.search_headings(
+            arguments["query"],
+            limit=int(arguments.get("limit", 10)),
+            scope=str(arguments.get("scope", "document")),
+        )
+        return {
+            "query": arguments["query"],
+            "scope": str(arguments.get("scope", "document")),
+            "hits": [self._serialize_search_hit(hit) for hit in hits],
+        }
+
+    def _handle_jump_to_node(self, *, session: RuntimeSession, capability: CapabilityProfile | None, arguments: dict[str, Any]) -> dict[str, Any]:
+        node = session.jump_to_node(arguments["node_id"])
+        return {
+            "status": session.model.status.value,
+            "node": None if node is None else self._serialize_node(node),
+        }
+
+    def _handle_list_internal_links(self, *, session: RuntimeSession, capability: CapabilityProfile | None, arguments: dict[str, Any]) -> dict[str, Any]:
+        hits = session.list_internal_links(node_id=arguments.get("node_id"))
+        return {
+            "node_id": arguments.get("node_id") or session.model.step.node_id,
+            "links": [self._serialize_internal_link_hit(hit) for hit in hits],
+        }
+
+    def _handle_follow_internal_link(self, *, session: RuntimeSession, capability: CapabilityProfile | None, arguments: dict[str, Any]) -> dict[str, Any]:
+        node = session.follow_internal_link(arguments["relation_id"], node_id=arguments.get("node_id"))
+        return {
+            "status": session.model.status.value,
+            "node": None if node is None else self._serialize_node(node),
         }
 
     def _handle_highlight(self, *, session: RuntimeSession, capability: CapabilityProfile | None, arguments: dict[str, Any]) -> dict[str, Any]:
@@ -284,7 +412,7 @@ class CodexToolRegistry:
             body_kind=arguments.get("body_kind"),
             compiler_profile=arguments.get("compiler_profile"),
         )
-        return {"workspace": self._serialize_workspace(workspace)}
+        return self._workspace_payload(workspace)
 
     def _handle_advance(self, *, session: RuntimeSession, capability: CapabilityProfile | None, arguments: dict[str, Any]) -> dict[str, Any]:
         node = session.advance()
@@ -295,7 +423,14 @@ class CodexToolRegistry:
 
     def _handle_describe_workspace(self, *, session: RuntimeSession, capability: CapabilityProfile | None, arguments: dict[str, Any]) -> dict[str, Any]:
         workspace = session.workspace(arguments["workspace_id"])
-        return {"workspace": self._serialize_workspace(workspace)}
+        return self._workspace_payload(workspace)
+
+    def _handle_read_source(self, *, session: RuntimeSession, capability: CapabilityProfile | None, arguments: dict[str, Any]) -> dict[str, Any]:
+        workspace = session.workspace(arguments["workspace_id"])
+        return {
+            "workspace_id": workspace.workspace_id,
+            "source": workspace.read_source(),
+        }
 
     def _handle_read_body(self, *, session: RuntimeSession, capability: CapabilityProfile | None, arguments: dict[str, Any]) -> dict[str, Any]:
         workspace = session.workspace(arguments["workspace_id"])
@@ -304,17 +439,17 @@ class CodexToolRegistry:
     def _handle_write_body(self, *, session: RuntimeSession, capability: CapabilityProfile | None, arguments: dict[str, Any]) -> dict[str, Any]:
         workspace = session.workspace(arguments["workspace_id"])
         workspace.write_body(arguments["content"])
-        return {"workspace": self._serialize_workspace(workspace)}
+        return self._workspace_payload(workspace)
 
     def _handle_patch_body(self, *, session: RuntimeSession, capability: CapabilityProfile | None, arguments: dict[str, Any]) -> dict[str, Any]:
         workspace = session.workspace(arguments["workspace_id"])
         workspace.patch_body(arguments["old"], arguments["new"])
-        return {"workspace": self._serialize_workspace(workspace)}
+        return self._workspace_payload(workspace)
 
     def _handle_compile(self, *, session: RuntimeSession, capability: CapabilityProfile | None, arguments: dict[str, Any]) -> dict[str, Any]:
         workspace = session.workspace(arguments["workspace_id"])
         result = workspace.compile()
-        return {"workspace": self._serialize_workspace(workspace), "compile_result": self._serialize_compile_result(result)}
+        return self._workspace_payload(workspace, compile_result=self._serialize_compile_result(result))
 
     def _handle_get_compile_errors(self, *, session: RuntimeSession, capability: CapabilityProfile | None, arguments: dict[str, Any]) -> dict[str, Any]:
         workspace = session.workspace(arguments["workspace_id"])
@@ -326,7 +461,7 @@ class CodexToolRegistry:
     def _handle_submit(self, *, session: RuntimeSession, capability: CapabilityProfile | None, arguments: dict[str, Any]) -> dict[str, Any]:
         workspace = session.workspace(arguments["workspace_id"])
         result = workspace.submit()
-        return {"workspace": self._serialize_workspace(workspace), "compile_result": self._serialize_compile_result(result)}
+        return self._workspace_payload(workspace, compile_result=self._serialize_compile_result(result))
 
     def _serialize_node(self, node: Any) -> dict[str, Any]:
         text_getter = getattr(node, "text_content", None)
@@ -335,6 +470,7 @@ class CodexToolRegistry:
             "node_id": getattr(node, "node_id", None),
             "kind": getattr(node, "kind", None),
             "page_number": getattr(node, "page_number", None),
+            "parent_node_id": getattr(node, "parent_node_id", None),
             "text": text_getter() if callable(text_getter) else None,
             "relations": [
                 {
@@ -347,15 +483,50 @@ class CodexToolRegistry:
             ],
         }
 
+    def _serialize_structure_slice(self, structure: NodeStructureSlice) -> dict[str, Any]:
+        return {
+            "focus_node_id": structure.focus_node_id,
+            "root_id": structure.root_id,
+            "parent_node_id": structure.parent_node_id,
+            "child_node_ids": list(structure.child_node_ids),
+            "sibling_node_ids": list(structure.sibling_node_ids),
+            "ancestry_node_ids": list(structure.ancestry_node_ids),
+            "section_path_node_ids": list(structure.section_path_node_ids),
+            "section_path_titles": list(structure.section_path_titles),
+        }
+
     def _serialize_workspace(self, workspace: WorkspaceSession) -> dict[str, Any]:
         return workspace.describe()
+
+    def _workspace_payload(self, workspace: WorkspaceSession, **extra: Any) -> dict[str, Any]:
+        return {
+            "workspace_id": workspace.workspace_id,
+            "workspace": self._serialize_workspace(workspace),
+            **extra,
+        }
 
     def _serialize_search_hit(self, hit: TextSearchHit) -> dict[str, Any]:
         return {
             "node_id": hit.node_id,
+            "node_kind": hit.node_kind,
             "page_number": hit.page_number,
             "text_preview": hit.text_preview,
             "match_count": hit.match_count,
+            "section_path_node_ids": list(hit.section_path_node_ids),
+            "section_path_titles": list(hit.section_path_titles),
+            "scope": hit.scope,
+            "score": hit.score,
+        }
+
+    def _serialize_internal_link_hit(self, hit: InternalLinkHit) -> dict[str, Any]:
+        return {
+            "relation_id": hit.relation_id,
+            "source_node_id": hit.source_node_id,
+            "target_node_id": hit.target_node_id,
+            "target_kind": hit.target_kind,
+            "target_page_number": hit.target_page_number,
+            "target_text_preview": hit.target_text_preview,
+            "score": hit.score,
         }
 
     def _serialize_compile_result(self, result: CompileResult) -> dict[str, Any]:

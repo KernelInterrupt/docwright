@@ -5,9 +5,11 @@ from docwright.capabilities.base import CapabilityDescriptor, CapabilityProfile
 from docwright.core.models import RuntimeSessionModel, RuntimeStepState
 from docwright.document.interfaces import (
     DocumentHandle,
+    InternalLinkHit,
     NodeContextSlice,
     NodeHandle,
     NodeRelationRef,
+    NodeStructureSlice,
     PageHandle,
 )
 from docwright.protocol.events import EventName, ProtocolEvent
@@ -26,6 +28,8 @@ def test_contract_modules_export_dataclass_models() -> None:
         EventName,
         NodeRelationRef,
         NodeContextSlice,
+        NodeStructureSlice,
+        InternalLinkHit,
         AdapterDescriptor,
         CapabilityDescriptor,
         SkillDescriptor,

@@ -99,6 +99,8 @@ class CodexAdapter:
             metadata={
                 "session_id": session.model.session_id,
                 "run_id": session.model.run_id,
+                "document_id": session.model.document_id,
+                "current_node_id": None if session.model.step is None else session.model.step.node_id,
                 "capability": None if capability is None else capability.descriptor.name,
                 "adapter": self.descriptor.name,
             },

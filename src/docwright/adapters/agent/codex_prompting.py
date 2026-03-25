@@ -41,6 +41,11 @@ class CodexPromptAssembler:
             "You are a Codex-side agent operating DocWright through tools.",
             "Use the provided tools to inspect runtime state and perform document actions.",
             "Do not invent document structure, workspace contents, or step state.",
+            "Do not treat raw IR JSON as the main interaction surface; use exported runtime tools instead.",
+            "Tool arguments must match the published schemas exactly and must not include extra keys.",
+            "For reading, usually call current_node first, then get_context and/or search_text, then advance.",
+            "For non-linear documents, inspect structure, search headings, jump intentionally, and follow preserved internal links instead of forcing sequential traversal.",
+            "For workspace edits, use the controlled lifecycle: open_workspace -> describe_workspace -> read_source/read_body -> write_body/patch_body -> compile -> submit.",
         ]
 
         if capability is not None:

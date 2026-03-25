@@ -17,6 +17,7 @@ It is **not** a chatbot and **not** a one-shot summarizer.
 Think of DocWright as:
 - a **document runtime**
 - a **stateful automation kernel** for document agents
+- a runtime that supports sequential traversal, structure inspection, and non-linear targeting
 - a host for multiple agent runtimes such as Codex-like systems
 
 Not as:
@@ -83,9 +84,21 @@ If the optional backend is not installed:
 
 ---
 
+## Official sample baseline
+
+The default professional sample for this repository is always:
+
+- `Attention Is All You Need`
+- fixture path: `tests/fixtures/document_ir/attention_is_all_you_need.document_ir.json`
+
+Ad hoc local PDFs may be useful for one-off experiments, but they are **not**
+the canonical sample used to explain the API shape.
+
+---
+
 ## Quick start
 
-### 1. Load a prepared Document IR fixture into the runtime
+### 1. Canonical host entry: load a document, then create `DocWrightCodexEntry`
 
 ```python
 from docwright.document import load_in_memory_document_from_ir_path
@@ -103,7 +116,29 @@ entry = DocWrightCodexEntry.from_document(
 )
 ```
 
-### 2. Export one step contract for an agent host
+This is the primary direct-library bootstrap path.
+
+Hosts should treat:
+
+```python
+DocWrightCodexEntry.from_document(document, ...)
+```
+
+as the stable integration contract.
+
+This repository uses a prepared IR fixture for the shortest quick start, but the
+consumer-facing path is not IR-only. A real PDF-first flow can start with:
+
+```python
+from docwright import document
+from docwright.document import in_memory_document_from_ir
+
+ir_payload = document.ir_converter("paper.pdf")
+document_handle = in_memory_document_from_ir(ir_payload)
+entry = DocWrightCodexEntry.from_document(document_handle, ...)
+```
+
+### 2. Export one step contract for a Codex-like host
 
 ```python
 contract = entry.export_step()
@@ -116,10 +151,61 @@ print([tool.name for tool in contract.tools])
 ```python
 from docwright.adapters.agent.codex_types import CodexToolCall
 
-result = entry.execute_tool_call(
-    CodexToolCall(call_id="1", name="current_node")
+current = entry.execute_tool_call(CodexToolCall(call_id="1", name="current_node"))
+structure = entry.execute_tool_call(CodexToolCall(call_id="2", name="get_structure"))
+search = entry.execute_tool_call(
+    CodexToolCall(call_id="3", name="search_text", arguments={"query": "attention", "limit": 3})
 )
+headings = entry.execute_tool_call(
+    CodexToolCall(call_id="4", name="search_headings", arguments={"query": "results", "limit": 3})
+)
+advanced = entry.execute_tool_call(CodexToolCall(call_id="5", name="advance"))
 ```
+
+### 4. Recommended host loop
+
+The intended host loop is:
+
+1. `export_step()`
+2. give Codex:
+   - `instructions`
+   - `turn_prompt`
+   - `tools`
+3. receive a structured tool call
+4. run `execute_tool_call(...)`
+5. send the `CodexToolResult` back into the model loop
+6. call `record_output(...)` when the step finishes
+
+This is the Playwright-like direct-library shape for DocWright.
+
+---
+
+## Codex host operating rules
+
+For low-error host usage, keep these rules stable:
+
+1. **Do not read raw IR JSON as the main interaction surface.**
+   Use the runtime entry plus exported tools.
+2. **Use tool schemas exactly.**
+   Do not add extra keys.
+3. **For sequential reading, prefer this order:**
+   - `current_node`
+   - `get_context` and/or `search_text`
+   - `advance`
+4. **For non-linear documents, prefer this order:**
+   - `current_node`
+   - `get_structure`
+   - `search_headings` and/or scoped `search_text`
+   - `jump_to_node` or `follow_internal_link`
+5. **For workspace edits, prefer this order:**
+   - `open_workspace`
+   - `describe_workspace`
+   - `read_source` and/or `read_body`
+   - `write_body` or `patch_body`
+   - `compile`
+   - `submit`
+6. **Do not bypass runtime guardrails.**
+   DocWright owns reading order, workspace lifecycle, and session state.
 
 ---
 
@@ -144,10 +230,32 @@ DocWrightCodexEntry.from_document(document, ...)
 
 ---
 
+## Official Attention smoke / demo
+
+The installed package now includes an official Attention-based smoke module:
+
+```python
+from docwright.codex.samples.attention_smoke import run_attention_fixture_smoke
+
+result = run_attention_fixture_smoke()
+print(result["contract"]["metadata"])
+print(result["tool_results"][0]["name"])
+```
+
+This demo intentionally uses the canonical path internally:
+
+- load Attention IR fixture as a `DocumentHandle`
+- construct `DocWrightCodexEntry.from_document(...)`
+- export a step contract
+- execute `current_node`, `get_context`, `search_text`, and `advance`
+- demonstrate the baseline direct-library loop before richer tree/jump navigation flows
+
+---
+
 ## What is implemented right now
 
 Current baseline includes:
-- runtime sessions with current-node, context, keyword search, highlight, warning, open-workspace, and advance actions
+- runtime sessions with current-node, context, structure inspection, scoped keyword search, heading search, jump/follow-link navigation, highlight, warning, open-workspace, and advance actions
 - action-capable runtime node views over document handles
 - workspace sessions with read/write/patch/read-source/compile/submit lifecycle
 - executable workspace templates with declarative editable-region rules and assembled-source views
@@ -217,6 +325,10 @@ Relevant docs:
 - `docs/workspace_session_contract_v1.md`
 - `docs/workspace_sandbox_design_v1.md`
 - `docs/workspace_profile_design_v1.md`
+- `docs/codex_host_quickstart_v1.md`
+- `docs/codex_attention_host_checklist_v1.md`
+- `docs/navigation_runtime_requirements_v1.md`
+- `docs/navigation_runtime_checklist_v1.md`
 
 ---
 

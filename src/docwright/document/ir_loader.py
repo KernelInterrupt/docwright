@@ -28,6 +28,7 @@ def in_memory_document_from_ir(payload: Mapping[str, Any]) -> InMemoryDocument:
     """Convert a minimal Core-facing Document IR payload into in-memory handles."""
 
     document_id = str(payload["document_id"])
+    root_id = payload.get("root_id")
     nodes_payload = payload["nodes"]
     reading_order = tuple(payload["reading_order"])
 
@@ -42,12 +43,13 @@ def in_memory_document_from_ir(payload: Mapping[str, Any]) -> InMemoryDocument:
     nodes = [
         _node_from_ir_node(node_id, node_payload, relation_refs_by_source.get(node_id, ()))
         for node_id, node_payload in nodes_payload.items()
-        if node_id != payload.get("root_id")
+        if node_id != root_id
     ]
     return InMemoryDocument.from_nodes(
         document_id=document_id,
         nodes=nodes,
         reading_order=reading_order,
+        root_id=str(root_id) if isinstance(root_id, str) else None,
     )
 
 
@@ -64,6 +66,7 @@ def _node_from_ir_node(
         kind=str(node_payload.get("kind", "unknown")),
         page_number=_page_number(node_payload),
         text=_node_text(node_payload),
+        parent_node_id=_parent_id(node_payload),
         relation_refs=relation_refs,
     )
 
@@ -75,6 +78,13 @@ def _page_number(node_payload: Mapping[str, Any]) -> int:
         if isinstance(page, int) and page > 0:
             return page
     return 1
+
+
+def _parent_id(node_payload: Mapping[str, Any]) -> str | None:
+    parent_id = node_payload.get("parent_id")
+    if isinstance(parent_id, str) and parent_id:
+        return parent_id
+    return None
 
 
 def _node_text(node_payload: Mapping[str, Any]) -> str | None:
