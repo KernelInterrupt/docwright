@@ -126,13 +126,20 @@ DocWrightCodexEntry.from_document(document, ...)
 
 as the stable integration contract.
 
-This repository uses a prepared IR fixture for the shortest quick start, but the
-consumer-facing path is not IR-only. A real PDF-first flow can start with:
+For real consumers, there is now also a PDF-first shortcut:
 
 ```python
-from docwright import document
-from docwright.document import in_memory_document_from_ir
+from docwright.codex.entry import DocWrightCodexEntry
 
+entry = DocWrightCodexEntry.from_pdf(
+    "paper.pdf",
+    goal="read and structure this document",
+)
+```
+
+Internally, this still follows the same clean layering:
+
+```python
 ir_payload = document.ir_converter("paper.pdf")
 document_handle = in_memory_document_from_ir(ir_payload)
 entry = DocWrightCodexEntry.from_document(document_handle, ...)
@@ -145,6 +152,12 @@ contract = entry.export_step()
 print(contract.turn_prompt)
 print([tool.name for tool in contract.tools])
 ```
+
+`export_step().metadata` also reports whether the default workspace stack is
+ready, including:
+- `workspace_registry_ready`
+- `workspace_compile_ready`
+- `workspace_compiler`
 
 ### 3. Execute tool calls against the runtime
 
@@ -202,10 +215,14 @@ For low-error host usage, keep these rules stable:
    - `describe_workspace`
    - `read_source` and/or `read_body`
    - `write_body` or `patch_body`
-   - `compile`
-   - `submit`
+   - `compile` and `submit` only when those tools are exported and the workspace reports readiness
 6. **Do not bypass runtime guardrails.**
    DocWright owns reading order, workspace lifecycle, and session state.
+
+By default, `DocWrightCodexEntry.from_document(...)` now auto-provisions the
+built-in workspace registry. When a supported LaTeX toolchain is available, it
+also auto-provisions the built-in compiler; otherwise compiler-dependent tools
+stay hidden instead of advertising an unusable compile path.
 
 ---
 

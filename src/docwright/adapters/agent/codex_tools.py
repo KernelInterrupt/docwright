@@ -19,6 +19,8 @@ if TYPE_CHECKING:
 class CodexToolRegistry:
     """Translate active DocWright skills into Codex-callable tools."""
 
+    _COMPILER_DEPENDENT_TOOLS = frozenset({"compile", "get_compile_errors", "submit"})
+
     def tools_for(
         self,
         session: RuntimeSession,
@@ -43,7 +45,7 @@ class CodexToolRegistry:
                 for tool_name in skill.tool_names()
             )
 
-        unique_names = tuple(dict.fromkeys(tool_names))
+        unique_names = self._filter_tool_names(session, tuple(dict.fromkeys(tool_names)))
         description_overrides = self._tool_description_overrides(capability)
         return tuple(self._tool_spec(name, description=description_overrides.get(name)) for name in unique_names)
 
@@ -78,6 +80,11 @@ class CodexToolRegistry:
             for tool_name, description in skill.tool_descriptions().items():
                 descriptions.setdefault(tool_name, description)
         return descriptions
+
+    def _filter_tool_names(self, session: RuntimeSession, tool_names: tuple[str, ...]) -> tuple[str, ...]:
+        if session.workspace_compile_ready():
+            return tool_names
+        return tuple(name for name in tool_names if name not in self._COMPILER_DEPENDENT_TOOLS)
 
     def _spec_current_node(self) -> CodexToolSpec:
         return CodexToolSpec(

@@ -83,6 +83,9 @@ class WorkspaceSession:
     def compile(self) -> CompileResult:
         if self._compiler is None:
             raise WorkspaceGuardrailError("workspace compiler is not configured")
+        compiler_info = describe_workspace_compiler(self._compiler)
+        if compiler_info is not None and not compiler_info.get("available", True):
+            raise WorkspaceGuardrailError("workspace compiler is configured but not currently available")
         if self._model.state is WorkspaceState.SUBMITTED:
             raise WorkspaceGuardrailError("cannot compile a submitted workspace")
 
@@ -123,6 +126,16 @@ class WorkspaceSession:
 
         compile_result = self._model.current_compile_result
         compiler_info = describe_workspace_compiler(self._compiler)
+        compile_ready = (
+            compiler_info is not None
+            and bool(compiler_info.get("available", True))
+            and self._model.state is not WorkspaceState.SUBMITTED
+        )
+        compile_backend = None
+        if compiler_info is not None:
+            compile_backend = compiler_info.get("profile") or compiler_info.get("name")
+        if compile_result is not None:
+            compile_backend = compile_result.backend_name
         return {
             "workspace_id": self.workspace_id,
             "task": self.task,
@@ -145,8 +158,8 @@ class WorkspaceSession:
                 "start_marker": self._model.editable_region.start_marker,
                 "end_marker": self._model.editable_region.end_marker,
             },
-            "compile_ready": self._compiler is not None and self._model.state is not WorkspaceState.SUBMITTED,
-            "compile_backend": None if compile_result is None else compile_result.backend_name,
+            "compile_ready": compile_ready,
+            "compile_backend": compile_backend,
             "compiler": compiler_info,
             "submit_ready": self._model.state is WorkspaceState.COMPILED and compile_result is not None and compile_result.ok,
         }

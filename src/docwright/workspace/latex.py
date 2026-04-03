@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import shutil
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterable
@@ -59,20 +60,30 @@ class LatexWorkspaceCompiler:
 
     def describe(self) -> WorkspaceCompilerDescriptor:
         sandbox_name = None
+        sandbox_available = True
         describe = getattr(self._sandbox, "describe", None)
         if callable(describe):
             info = describe()
             if isinstance(info, dict):
                 sandbox_name = str(info.get("name")) if info.get("name") is not None else None
+                sandbox_available = bool(info.get("available", True))
+        command_name = self._profile.command[0]
+        command_path = shutil.which(command_name)
+        command_lookup_required = sandbox_name in {None, "local_process", "bubblewrap"}
         return WorkspaceCompilerDescriptor(
             name="latex_workspace",
             profile=self._profile.name,
             sandbox_backend=sandbox_name,
-            available=True,
+            available=sandbox_available and (command_path is not None or not command_lookup_required),
             details={
                 "main_filename": self._profile.main_filename,
                 "artifact_paths": list(self._profile.artifact_paths),
                 "description": self._profile.description,
+                "command": list(self._profile.command),
+                "command_name": command_name,
+                "command_path": command_path,
+                "command_lookup_required": command_lookup_required,
+                "sandbox_available": sandbox_available,
             },
         )
 

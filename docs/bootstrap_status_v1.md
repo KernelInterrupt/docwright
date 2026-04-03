@@ -254,7 +254,8 @@ If continuing implementation work, use this order:
 
 1. read `docs/prototype_migration_mapping_v1.md`
 2. review `docs/migration_checklist_v1.md`
-3. pick the next post-milestone slice without violating the Core / Adapter / Capability / Skill / Workspace boundaries
+3. use `docs/post_milestone_completion_checklist_v1.md` for the remaining explicit unfinished items
+4. pick the next post-milestone slice without violating the Core / Adapter / Capability / Skill / Workspace boundaries
 
 ---
 

@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 import shutil
 
-from docwright.workspace.latex import LatexWorkspaceCompiler
+from docwright.workspace.latex import DEFAULT_LATEX_COMPILER_PROFILES, LatexWorkspaceCompiler
 from docwright.workspace.profiles import WorkspaceProfile
 from docwright.workspace.registry import WorkspaceProfileRegistry
 from docwright.workspace.sandbox import BubblewrapSandboxBackend, LocalProcessSandboxBackend, SandboxPolicy
@@ -54,12 +55,47 @@ DEFAULT_LATEX_ANNOTATION_PROFILE = WorkspaceProfile(
 )
 
 
-def build_default_workspace_registry() -> WorkspaceProfileRegistry:
+def select_default_latex_compiler_profile(
+    preferred_profiles: tuple[str, ...] = ("tectonic", "pdflatex"),
+) -> str | None:
+    """Return the first installed LaTeX compiler profile from the preferred list."""
+
+    for profile_name in preferred_profiles:
+        profile = DEFAULT_LATEX_COMPILER_PROFILES.get(profile_name)
+        if profile is None:
+            continue
+        if shutil.which(profile.command[0]) is not None:
+            return profile_name
+    return None
+
+
+def select_default_workspace_sandbox_profile() -> str:
+    """Return the preferred built-in sandbox profile for workspace compilation."""
+
+    return "bubblewrap" if shutil.which("bwrap") is not None else "local_process"
+
+
+def build_default_workspace_registry(
+    *,
+    compiler_profile: str | None = "tectonic",
+    sandbox_profile: str | None = "bubblewrap",
+) -> WorkspaceProfileRegistry:
     """Return the built-in annotation-first workspace registry."""
 
     registry = WorkspaceProfileRegistry()
-    registry.register_template(DEFAULT_LATEX_ANNOTATION_TEMPLATE)
-    registry.register_profile(DEFAULT_LATEX_ANNOTATION_PROFILE)
+    registry.register_template(
+        replace(
+            DEFAULT_LATEX_ANNOTATION_TEMPLATE,
+            compiler_profile=compiler_profile,
+        )
+    )
+    registry.register_profile(
+        replace(
+            DEFAULT_LATEX_ANNOTATION_PROFILE,
+            compiler_profile=compiler_profile,
+            sandbox_profile=sandbox_profile,
+        )
+    )
     return registry
 
 
@@ -95,7 +131,7 @@ def build_bubblewrap_latex_workspace_compiler(
 
 def build_default_latex_workspace_compiler(
     *,
-    profile: str = "tectonic",
+    profile: str | None = None,
     base_dir: str | None = None,
     sandbox_policy: SandboxPolicy | None = None,
 ) -> LatexWorkspaceCompiler:
@@ -106,14 +142,18 @@ def build_default_latex_workspace_compiler(
     2. local-process fallback otherwise
     """
 
+    resolved_profile = profile or select_default_latex_compiler_profile()
+    if resolved_profile is None:
+        resolved_profile = "tectonic"
+
     if shutil.which("bwrap") is not None:
         return build_bubblewrap_latex_workspace_compiler(
-            profile=profile,
+            profile=resolved_profile,
             base_dir=base_dir,
             sandbox_policy=sandbox_policy,
         )
     return build_local_latex_workspace_compiler(
-        profile=profile,
+        profile=resolved_profile,
         base_dir=base_dir,
         sandbox_policy=sandbox_policy,
     )

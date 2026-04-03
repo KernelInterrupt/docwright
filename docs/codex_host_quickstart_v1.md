@@ -30,8 +30,17 @@ entry = DocWrightCodexEntry.from_document(
 )
 ```
 
-For a real PDF-first consumer flow, use the optional document facade before you
-enter the runtime:
+For a real PDF-first consumer flow, the shortest shortcut is now:
+
+```python
+entry = DocWrightCodexEntry.from_pdf(
+    "paper.pdf",
+    goal="read and structure this document",
+)
+```
+
+Internally this still resolves through the optional document facade before
+entering the runtime:
 
 ```python
 from docwright import document
@@ -54,6 +63,7 @@ Give the host model:
 - `contract.instructions`
 - `contract.turn_prompt`
 - `contract.tools`
+- `contract.metadata` (including workspace readiness fields such as `workspace_registry_ready`, `workspace_compile_ready`, and `workspace_compiler`)
 
 ---
 
@@ -99,6 +109,10 @@ entry.record_output(output_text="Step complete.", stop_reason="done")
    - `describe_workspace`
    - `read_source` and/or `read_body`
    - `write_body` or `patch_body`
-   - `compile`
-   - `submit`
+   - `compile` / `submit` only when those tools are exported and the workspace reports readiness
 6. Let DocWright own state, guardrails, and workspace lifecycle.
+
+Default entry behavior:
+- `DocWrightCodexEntry.from_document(...)` auto-provisions the built-in workspace registry
+- if a supported built-in LaTeX compiler is detected, compiler-dependent tools are also exported
+- otherwise `compile` / `submit` stay off the tool surface by default

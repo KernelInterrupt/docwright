@@ -1,6 +1,6 @@
 {
   "contract": {
-    "instructions": "You are a Codex-side agent operating DocWright through tools.\n\nUse the provided tools to inspect runtime state and perform document actions.\n\nDo not invent document structure, workspace contents, or step state.\n\nDo not treat raw IR JSON as the main interaction surface; use exported runtime tools instead.\n\nTool arguments must match the published schemas exactly and must not include extra keys.\n\nFor reading, usually call current_node first, then get_context and/or search_text, then advance.\n\nFor non-linear documents, inspect structure, search headings, jump intentionally, and follow preserved internal links instead of forcing sequential traversal.\n\nFor workspace edits, use the controlled lifecycle: open_workspace -> describe_workspace -> read_source/read_body -> write_body/patch_body -> compile -> submit.\n\nActive capability: manual_task - Manual document task mode with relaxed runtime guardrails.\n\nGuardrails: max 1 workspace open per step\n\nActive skill bundles:\n- navigation: current_node, get_context, search_text, advance, get_structure, search_headings, jump_to_node, list_internal_links, follow_internal_link\n- highlighting: highlight\n- warnings: warning\n- workspace_editing: open_workspace, describe_workspace, read_source, read_body, write_body, patch_body, compile, submit\n\nRuntime identifiers: session=session-1, run=run-1.\n\nWork one DocWright step at a time. Prefer structured tool calls over free-form explanation.",
+    "instructions": "You are a Codex-side agent operating DocWright through tools.\n\nUse the provided tools to inspect runtime state and perform document actions.\n\nDo not invent document structure, workspace contents, or step state.\n\nDo not treat raw IR JSON as the main interaction surface; use exported runtime tools instead.\n\nTool arguments must match the published schemas exactly and must not include extra keys.\n\nFor reading, usually call current_node first, then get_context and/or search_text, then advance.\n\nFor non-linear documents, inspect structure, search headings, jump intentionally, and follow preserved internal links instead of forcing sequential traversal.\n\nFor workspace edits, use the controlled lifecycle: open_workspace -> describe_workspace -> read_source/read_body -> write_body/patch_body -> compile -> submit. Only use compile/submit when those tools are exported and the workspace reports readiness.\n\nActive capability: manual_task - Manual document task mode with relaxed runtime guardrails.\n\nGuardrails: max 1 workspace open per step\n\nActive skill bundles:\n- navigation: current_node, get_context, search_text, advance, get_structure, search_headings, jump_to_node, list_internal_links, follow_internal_link\n- highlighting: highlight\n- warnings: warning\n- workspace_editing: open_workspace, describe_workspace, read_source, read_body, write_body, patch_body, compile, submit\n\nRuntime identifiers: session=session-1, run=run-1.\n\nWork one DocWright step at a time. Prefer structured tool calls over free-form explanation.",
     "turn_prompt": "Run one DocWright step for session session-1.\nCurrent node: node-1 (paragraph) on page 1.\nNode text preview: alpha\nLocal context -> before: <none>; after: node-2.",
     "tools": [
       {
@@ -345,38 +345,6 @@
           ],
           "additionalProperties": false
         }
-      },
-      {
-        "name": "compile",
-        "description": "Compile the current workspace body and return structured success or error details plus the workspace_id.",
-        "input_schema": {
-          "type": "object",
-          "properties": {
-            "workspace_id": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "workspace_id"
-          ],
-          "additionalProperties": false
-        }
-      },
-      {
-        "name": "submit",
-        "description": "Submit the workspace only after the workspace is ready for submission.",
-        "input_schema": {
-          "type": "object",
-          "properties": {
-            "workspace_id": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "workspace_id"
-          ],
-          "additionalProperties": false
-        }
       }
     ],
     "metadata": {
@@ -385,7 +353,10 @@
       "document_id": "doc-1",
       "current_node_id": "node-1",
       "capability": "manual_task",
-      "adapter": "codex"
+      "adapter": "codex",
+      "workspace_registry_ready": false,
+      "workspace_compile_ready": false,
+      "workspace_compiler": null
     }
   },
   "tool_calls": [

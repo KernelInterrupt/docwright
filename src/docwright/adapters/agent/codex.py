@@ -103,6 +103,9 @@ class CodexAdapter:
                 "current_node_id": None if session.model.step is None else session.model.step.node_id,
                 "capability": None if capability is None else capability.descriptor.name,
                 "adapter": self.descriptor.name,
+                "workspace_registry_ready": session.workspace_registry_ready(),
+                "workspace_compile_ready": session.workspace_compile_ready(),
+                "workspace_compiler": session.workspace_compiler_info(),
             },
         )
         self._bump_usage("step_exports")

@@ -25,8 +25,14 @@ When bootstrapping the host integration, the canonical entry is always:
 DocWrightCodexEntry.from_document(document, ...)
 ```
 
-The optional packaged Attention helper is only for convenience. It does not
-replace the main entry contract.
+For consumer ergonomics, the package now also provides a PDF-first shortcut:
+
+```python
+DocWrightCodexEntry.from_pdf("paper.pdf", goal="read and structure this document")
+```
+
+The PDF-first shortcut is a thin convenience layer over the canonical
+`from_document(...)` contract; it does not replace the main entry contract.
 
 ---
 
@@ -144,9 +150,21 @@ The host guidance should keep these rules stable:
    - `describe_workspace`
    - `read_source` and/or `read_body`
    - `write_body` or `patch_body`
-   - `compile`
-   - `submit`
+   - `compile` / `submit` only when those tools are exported and the workspace reports readiness
 6. treat `AGENTS.md` as repository guidance only, never as runtime state
+
+### 3.2 Default workspace readiness behavior
+
+For the default installed experience:
+
+- `DocWrightCodexEntry.from_document(...)` auto-wires the built-in workspace registry
+- when a supported built-in LaTeX compiler is actually available, it is auto-wired too
+- step metadata exposes:
+  - `workspace_registry_ready`
+  - `workspace_compile_ready`
+  - `workspace_compiler`
+- compiler-dependent tools are removed from the exported tool surface when the
+  compiler is not ready, so hosts do not advertise a broken `compile` path
 
 ---
 

@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 
+import pytest
+
 from docwright.adapters.agent.codex_tools import CodexToolRegistry
 from docwright.adapters.agent.codex_types import CodexToolCall
 from docwright.capabilities.guided_reading import GuidedReadingCapability
@@ -11,6 +13,9 @@ from docwright.workspace.models import CompileResult, WorkspaceSessionModel
 from docwright.workspace.profiles import WorkspaceProfile
 from docwright.workspace.registry import WorkspaceProfileRegistry
 from docwright.workspace.templates import EditableRegionSpec, WorkspaceTemplate
+from docwright.workspace.session import WorkspaceGuardrailError
+
+_USE_DEFAULT_COMPILER = object()
 
 
 @dataclass(slots=True)
@@ -57,7 +62,11 @@ def make_workspace_registry() -> WorkspaceProfileRegistry:
 
 
 
-def make_session(*, workspace_registry: WorkspaceProfileRegistry | None = None) -> RuntimeSession:
+def make_session(
+    *,
+    workspace_registry: WorkspaceProfileRegistry | None = None,
+    workspace_compiler: FakeCompiler | None | object = _USE_DEFAULT_COMPILER,
+) -> RuntimeSession:
     return RuntimeSession(
         RuntimeSessionModel(session_id="session-1", run_id="run-1", document_id="doc-1"),
         document=InMemoryDocument.from_nodes(
@@ -78,7 +87,11 @@ def make_session(*, workspace_registry: WorkspaceProfileRegistry | None = None) 
             ],
         ),
         guardrail_policy=GuidedReadingCapability().guardrail_policy(),
-        workspace_compiler=FakeCompiler(result=CompileResult(ok=True, backend_name="fake", rendered_content="ok")),
+        workspace_compiler=(
+            FakeCompiler(result=CompileResult(ok=True, backend_name="fake", rendered_content="ok"))
+            if workspace_compiler is _USE_DEFAULT_COMPILER
+            else workspace_compiler
+        ),
         workspace_registry=workspace_registry,
     )
 
@@ -222,6 +235,48 @@ def test_tool_registry_executes_runtime_navigation_and_workspace_tools() -> None
     assert compiled.output["workspace_id"] == workspace_id
     assert submitted.output["workspace_id"] == workspace_id
     assert submitted.output["workspace"]["state"] == "submitted"
+
+
+def test_tool_registry_hides_compiler_dependent_tools_when_compiler_is_not_ready() -> None:
+    registry = CodexToolRegistry()
+    tools = registry.tools_for(
+        make_session(workspace_registry=make_workspace_registry(), workspace_compiler=None),
+        GuidedReadingCapability(),
+    )
+
+    names = [tool.name for tool in tools]
+    assert "compile" not in names
+    assert "submit" not in names
+    assert "open_workspace" in names
+    assert "describe_workspace" in names
+
+
+def test_workspace_description_reports_compile_not_ready_without_compiler() -> None:
+    registry = CodexToolRegistry()
+    session = make_session(workspace_registry=make_workspace_registry(), workspace_compiler=None)
+
+    opened = registry.execute_tool(
+        session=session,
+        capability=GuidedReadingCapability(),
+        call=CodexToolCall(
+            call_id="registry-no-compiler",
+            name="open_workspace",
+            arguments={"task": "annotation", "workspace_profile": "latex_annotation"},
+        ),
+    )
+
+    workspace_id = opened.output["workspace_id"]
+    workspace = opened.output["workspace"]
+    assert workspace["compile_ready"] is False
+    assert workspace["compiler"] is None
+    assert workspace["compile_backend"] is None
+
+    with pytest.raises(WorkspaceGuardrailError, match="not configured"):
+        registry.execute_tool(
+            session=session,
+            capability=GuidedReadingCapability(),
+            call=CodexToolCall(call_id="compile-missing", name="compile", arguments={"workspace_id": workspace_id}),
+        )
 
 
 def test_tool_registry_open_workspace_uses_registry_profile_defaults() -> None:

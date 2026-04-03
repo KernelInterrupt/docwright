@@ -24,7 +24,7 @@ from docwright.document.interfaces import (
     TextSearchHit,
 )
 from docwright.protocol.events import EventFamily, EventName
-from docwright.workspace.compiler import WorkspaceCompiler
+from docwright.workspace.compiler import WorkspaceCompiler, describe_workspace_compiler
 from docwright.workspace.models import EditableRegion, WorkspaceSessionModel
 from docwright.workspace.registry import WorkspaceProfileRegistry
 from docwright.workspace.session import WorkspaceSession
@@ -163,6 +163,18 @@ class RuntimeSession:
     @property
     def workspace_registry(self) -> WorkspaceProfileRegistry | None:
         return self._workspace_registry
+
+    def workspace_registry_ready(self) -> bool:
+        return self._workspace_registry is not None
+
+    def workspace_compiler_info(self) -> dict[str, Any] | None:
+        return describe_workspace_compiler(self._workspace_compiler)
+
+    def workspace_compile_ready(self) -> bool:
+        compiler_info = self.workspace_compiler_info()
+        if compiler_info is None:
+            return False
+        return bool(compiler_info.get("available", True))
 
     def events(self) -> tuple[RuntimeEventEnvelope, ...]:
         return tuple(self._events)

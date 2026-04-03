@@ -45,7 +45,7 @@ class CodexPromptAssembler:
             "Tool arguments must match the published schemas exactly and must not include extra keys.",
             "For reading, usually call current_node first, then get_context and/or search_text, then advance.",
             "For non-linear documents, inspect structure, search headings, jump intentionally, and follow preserved internal links instead of forcing sequential traversal.",
-            "For workspace edits, use the controlled lifecycle: open_workspace -> describe_workspace -> read_source/read_body -> write_body/patch_body -> compile -> submit.",
+            "For workspace edits, use the controlled lifecycle: open_workspace -> describe_workspace -> read_source/read_body -> write_body/patch_body -> compile -> submit. Only use compile/submit when those tools are exported and the workspace reports readiness.",
         ]
 
         if capability is not None:

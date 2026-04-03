@@ -41,6 +41,13 @@ Default rule:
 - [x] exercise `current_node`, `get_context`, `search_text`, and `advance`
 - [x] add an automated test for the official Attention smoke path
 
+## A5. Workspace readiness alignment
+- [x] auto-provision the built-in workspace registry on the default Codex entry path
+- [x] auto-provision the built-in compiler only when a supported local backend is actually available
+- [x] surface workspace readiness through exported step metadata
+- [x] hide compiler-dependent tools when the compiler is not ready
+- [x] add regression coverage for the default workspace stack wiring
+
 ---
 
 ## Completion note

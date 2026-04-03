@@ -82,6 +82,9 @@ def test_codex_adapter_exports_step_contract(tmp_path: Path) -> None:
         "current_node_id": "node-1",
         "capability": "guided_reading",
         "adapter": "codex",
+        "workspace_registry_ready": False,
+        "workspace_compile_ready": False,
+        "workspace_compiler": None,
     }
     assert "Prefer tools." in contract.instructions
     assert "Codex-side agent operating DocWright through tools" in contract.instructions

@@ -19,7 +19,7 @@ Rules:
 - [x] review host-side package layout and stop mixing generic host concepts with Codex-only concepts ambiguously
 - [x] decide and document one of the two directions clearly:
   - [x] make the current host bridge explicitly Codex-scoped
-  - [ ] or extract truly host-neutral contract types before keeping generic names
+  - [x] or extract truly host-neutral contract types before keeping generic names
 - [x] update affected docs to match the chosen layout
 
 ## N2. Tree-aware document contract

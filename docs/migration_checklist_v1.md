@@ -47,3 +47,11 @@ This checklist defines the first extraction path from the existing prototype int
 - [x] a guided-reading capability can highlight, warn, open workspace, and advance
 - [x] workspace compile/submit flow works through Core contracts
 - [x] tests prove Core can host more than one adapter/capability combination
+
+---
+
+## Follow-up note
+
+The remaining explicit unfinished items after this milestone are tracked in:
+
+- `docs/post_milestone_completion_checklist_v1.md`
