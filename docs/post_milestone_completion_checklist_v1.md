@@ -28,16 +28,16 @@ Scope:
 - [x] add tests/docs proving the compatibility layer stays adapter-scoped
 
 ## M3. Local companion boundary
-- [ ] define a host-local companion boundary outside the central runtime loop
-- [ ] keep companion-style launch/runtime orchestration out of Core session logic
-- [ ] add docs/tests proving the runtime can still be embedded without companion assumptions
+- [x] define a host-local companion boundary outside the central runtime loop
+- [x] keep companion-style launch/runtime orchestration out of Core session logic
+- [x] add docs/tests proving the runtime can still be embedded without companion assumptions
 
 ## M4. Headless transport protocol alignment
-- [ ] make headless transport return protocol-safe payloads/events instead of internal event objects
-- [ ] keep adapter-driven execution unchanged while tightening transport output contracts
-- [ ] update tests/docs to treat headless transport as protocol/event consumer
+- [x] make headless transport return protocol-safe payloads/events instead of internal event objects
+- [x] keep adapter-driven execution unchanged while tightening transport output contracts
+- [x] update tests/docs to treat headless transport as protocol/event consumer
 
 ## M5. `docwright-document` boundary definition
-- [ ] document which concrete ingestion / IR conversion responsibilities belong in `docwright-document`
-- [ ] document which lightweight handle/loading helpers remain in `docwright`
-- [ ] update package/docs to reflect the boundary without making Core import the external backend eagerly
+- [x] document which concrete ingestion / IR conversion responsibilities belong in `docwright-document`
+- [x] document which lightweight handle/loading helpers remain in `docwright`
+- [x] update package/docs to reflect the boundary without making Core import the external backend eagerly

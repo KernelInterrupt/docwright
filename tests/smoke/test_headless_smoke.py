@@ -32,7 +32,7 @@ def test_headless_smoke_flow_runs_one_guided_step() -> None:
     events = runner.run_once(session)
 
     assert session.model.step.node_id == "node-2"
-    assert [event.as_protocol_event().event_name for event in events][-2:] == [
+    assert [event.event_name for event in events][-2:] == [
         "highlight.applied",
         "node.entered",
     ]

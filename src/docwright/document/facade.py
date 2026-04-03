@@ -1,4 +1,8 @@
-"""Lazy document-backend facade for the unified ``docwright.document`` surface."""
+"""Lazy document-backend facade for the unified ``docwright.document`` surface.
+
+This module exists so ``docwright`` can expose one document namespace while
+keeping heavy ingest/IR conversion logic in an optional backend package.
+"""
 
 from __future__ import annotations
 

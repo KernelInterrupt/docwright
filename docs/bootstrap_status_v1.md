@@ -42,7 +42,7 @@ Implemented baseline capabilities now include:
 - adapter/capability/skill interfaces
 - reference skill bundles for navigation, highlighting, warnings, and workspace editing
 - first `guided_reading` capability with strategy text stored outside Core modules
-- headless runner scaffold with single-step and run-until-complete support
+- headless runner scaffold with single-step and run-until-complete support returning protocol-safe events
 - Codex-compatible bridge scaffold with guidance export, a skill-aware tool registry, fake-driver smoke tests, a direct-library host helper, an installable Codex package entry surface, an optional IR-fixture sample input, external-host fixtures, observer hooks, and usage/trace hooks
 - smoke, integration, lifecycle, and serialization tests
 
@@ -204,7 +204,7 @@ The following are now implemented as part of the current Core baseline:
 - reference skill bundles for navigation, highlighting, warnings, and workspace editing
 - guided-reading capability scaffold with external strategy text
 - manual-task capability scaffold for relaxed runtime operation
-- headless runner scaffold with completion loop
+- headless runner scaffold with completion loop returning protocol-safe events
 - workspace lifecycle tests
 - runtime guardrail tests
 - reference runtime API tests

@@ -35,7 +35,7 @@ def test_guided_reading_runs_through_core_via_adapter_boundary() -> None:
     events = runner.run_once(session)
 
     assert session.model.step.node_id == "node-2"
-    assert [event.as_protocol_event().event_name for event in events] == [
+    assert [event.event_name for event in events] == [
         "runtime.started",
         "node.entered",
         "highlight.applied",

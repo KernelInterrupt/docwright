@@ -34,12 +34,12 @@ This checklist defines the first extraction path from the existing prototype int
 ## Phase 4 — adapter boundary cleanup
 - [x] define agent adapter interfaces in Core-neutral terms
 - [x] keep Responses/OpenAI compatibility logic behind adapter interfaces
-- [ ] keep local companion logic out of the central runtime loop
-- [ ] make headless transport consume protocol/events instead of internal objects directly
+- [x] keep local companion logic out of the central runtime loop
+- [x] make headless transport consume protocol/events instead of internal objects directly
 
 ## Phase 5 — document boundary preparation
 - [x] define which document interfaces stay in `docwright-core`
-- [ ] define which concrete ingestion/IR pieces later move to `docwright-document`
+- [x] define which concrete ingestion/IR pieces later move to `docwright-document`
 - [x] ensure Core depends on stable document handles, not parser internals
 
 ## Exit criteria for first useful milestone

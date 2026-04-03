@@ -38,7 +38,7 @@ def test_headless_runner_executes_adapter_against_core_session() -> None:
     events = runner.run_once(session)
 
     assert session.model.step.node_id == "node-2"
-    assert [event.as_protocol_event().event_name for event in events][-2:] == [
+    assert [event.event_name for event in events][-2:] == [
         "highlight.applied",
         "node.entered",
     ]
@@ -64,4 +64,4 @@ def test_headless_runner_can_drive_session_until_completion() -> None:
     events = runner.run_until_complete(session)
 
     assert session.model.status is RuntimeSessionStatus.COMPLETED
-    assert [event.as_protocol_event().event_name for event in events][-1] == "runtime.completed"
+    assert [event.event_name for event in events][-1] == "runtime.completed"

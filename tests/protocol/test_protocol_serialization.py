@@ -75,6 +75,7 @@ def test_headless_runner_events_can_be_serialized_without_transport_specific_log
     events = runner.run_once(session)
     serialized_events = [serialize_schema(event) for event in events]
 
+    assert events[0].event_name == "runtime.started"
     assert serialized_events[0]["name"] == "runtime.started"
     assert serialized_events[-2]["name"] == "highlight.applied"
     assert serialized_events[-1]["name"] == "node.entered"

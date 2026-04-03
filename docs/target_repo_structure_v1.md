@@ -40,6 +40,8 @@ docwright/
           base.py
           codex.py
           openclaw.py
+        companion/
+          base.py
         provider/
           base.py
         llm/
@@ -69,7 +71,10 @@ docwright/
 
 ### `document/`
 This repo should initially contain only the **interfaces needed by Core**.
-If `docwright-document` is split separately later, these may become imported abstractions rather than full implementations.
+It may also keep lightweight in-memory handles, fixture loaders, and a lazy
+optional-backend facade.
+Concrete source ingestion, parser wrappers, and IR-enrichment pipelines belong
+in `docwright-document`, not in Core.
 
 ### `core/`
 Contains runtime state, run/session control, and guardrails.
@@ -87,6 +92,11 @@ This is where “Codex can plug in” or “OpenClaw can plug in” should live.
 Contains provider/SDK compatibility shims for request/response formatting.
 This is where future Responses/OpenAI-style payload adaptation should live.
 It must not redefine Core contracts or replace transport-neutral adapter types.
+
+### `adapters/companion/`
+Contains optional host-local orchestration helpers.
+This is where future local companion / launcher logic should live.
+It must not become part of the Core session loop.
 
 ### `capabilities/`
 Contains task-mode policy surfaces.

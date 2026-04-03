@@ -82,6 +82,10 @@ If the optional backend is not installed:
 - `import docwright.document` stays safe
 - only the actual conversion call raises a clear install hint
 
+Boundary summary:
+- `docwright.document` keeps runtime-facing handles, fixture loaders, and the lazy facade
+- `docwright-document` owns concrete ingestion, parsing, and IR conversion/enrichment
+
 ---
 
 ## Official sample baseline
@@ -375,6 +379,7 @@ Other important docs:
 - `docs/core_agent_boundary_v1.md`
 - `docs/agent_integration_model_v1.md`
 - `docs/document_ir_contract_v1.md`
+- `docs/docwright_document_boundary_v1.md`
 - `docs/runtime_api_contract_v1.md`
 - `docs/codex_adapter_design_v1.md`
 - `docs/codex_direct_library_integration_v1.md`

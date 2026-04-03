@@ -2,7 +2,8 @@
 
 This package keeps lightweight in-repo document interfaces/loaders available by
 default while exposing optional heavy document-conversion entrypoints through a
-lazy facade.
+lazy facade. Concrete ingest and IR-conversion ownership stays with the
+optional ``docwright-document`` backend rather than Core.
 """
 
 from docwright.document.facade import (
