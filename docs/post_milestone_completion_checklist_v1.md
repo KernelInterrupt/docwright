@@ -18,9 +18,9 @@ Scope:
 ---
 
 ## M1. Optional MCP exposure
-- [ ] define a minimal MCP-facing export surface for the existing Codex/runtime contract
-- [ ] keep MCP optional rather than making it the canonical integration path
-- [ ] add tests/docs proving MCP exposure reuses existing adapter/runtime contracts instead of inventing a parallel Core path
+- [x] define a minimal MCP-facing export surface for the existing Codex/runtime contract
+- [x] keep MCP optional rather than making it the canonical integration path
+- [x] add tests/docs proving MCP exposure reuses existing adapter/runtime contracts instead of inventing a parallel Core path
 
 ## M2. Provider compatibility boundary
 - [ ] define an adapter-local provider compatibility module/boundary for future Responses/OpenAI-style integrations

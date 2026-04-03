@@ -53,4 +53,4 @@ Rule:
 - [x] transcript/export fixtures for external hosts
 - [x] streaming/event hooks for external runtimes
 - [x] usage logging / tracing hooks
-- [ ] optional MCP exposure
+- [x] optional MCP exposure

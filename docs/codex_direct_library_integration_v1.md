@@ -269,6 +269,17 @@ and only later optionally:
 Codex host -> MCP wrapper -> direct DocWright bridge -> DocWright Core
 ```
 
+The repository now includes a thin optional wrapper at:
+
+- `src/docwright/adapters/transport/mcp.py`
+
+That MCP-facing surface reuses:
+- exported step contracts from `CodexHostBridge`
+- existing tool schemas
+- existing tool execution
+
+It does **not** define a second runtime contract or a second Core path.
+
 ---
 
 

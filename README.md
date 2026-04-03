@@ -191,6 +191,10 @@ The intended host loop is:
 
 This is the Playwright-like direct-library shape for DocWright.
 
+An optional MCP wrapper can sit on top of the same bridge for hosts that prefer
+MCP-style tool exposure, but MCP is not the canonical integration path and does
+not replace the direct-library contract.
+
 ---
 
 ## Codex host operating rules
