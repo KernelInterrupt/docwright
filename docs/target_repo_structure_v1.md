@@ -40,6 +40,8 @@ docwright/
           base.py
           codex.py
           openclaw.py
+        provider/
+          base.py
         llm/
           base.py
         transport/
@@ -80,6 +82,11 @@ This replaces the narrow idea of an annotation-only sandbox.
 ### `adapters/agent/`
 Contains runtime adapters for external agent ecosystems.
 This is where “Codex can plug in” or “OpenClaw can plug in” should live.
+
+### `adapters/provider/`
+Contains provider/SDK compatibility shims for request/response formatting.
+This is where future Responses/OpenAI-style payload adaptation should live.
+It must not redefine Core contracts or replace transport-neutral adapter types.
 
 ### `capabilities/`
 Contains task-mode policy surfaces.

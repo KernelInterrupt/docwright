@@ -35,6 +35,10 @@ Examples:
 - `OpenClawAdapter`
 - `ResponsesToolAdapter`
 
+Provider SDK compatibility details should remain one layer lower, inside
+adapter-scoped provider helpers, rather than being pushed into Core or the
+transport-neutral bridge dataclasses.
+
 ### 1.3 Capability Profile
 Chooses which DocWright capabilities and rules are active for a task.
 

@@ -23,9 +23,9 @@ Scope:
 - [x] add tests/docs proving MCP exposure reuses existing adapter/runtime contracts instead of inventing a parallel Core path
 
 ## M2. Provider compatibility boundary
-- [ ] define an adapter-local provider compatibility module/boundary for future Responses/OpenAI-style integrations
-- [ ] keep provider-specific request/response shapes out of Core modules and transport-neutral bridge types
-- [ ] add tests/docs proving the compatibility layer stays adapter-scoped
+- [x] define an adapter-local provider compatibility module/boundary for future Responses/OpenAI-style integrations
+- [x] keep provider-specific request/response shapes out of Core modules and transport-neutral bridge types
+- [x] add tests/docs proving the compatibility layer stays adapter-scoped
 
 ## M3. Local companion boundary
 - [ ] define a host-local companion boundary outside the central runtime loop

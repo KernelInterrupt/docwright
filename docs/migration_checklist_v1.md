@@ -33,7 +33,7 @@ This checklist defines the first extraction path from the existing prototype int
 
 ## Phase 4 — adapter boundary cleanup
 - [x] define agent adapter interfaces in Core-neutral terms
-- [ ] keep Responses/OpenAI compatibility logic behind adapter interfaces
+- [x] keep Responses/OpenAI compatibility logic behind adapter interfaces
 - [ ] keep local companion logic out of the central runtime loop
 - [ ] make headless transport consume protocol/events instead of internal objects directly
 
