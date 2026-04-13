@@ -56,10 +56,10 @@ Scope:
 - [x] document any temporary compatibility layer that preserves old APIs during migration
 
 ## L6. Regression and acceptance coverage
-- [ ] add tests proving node-level actions can run via explicit node references without `current_node`
-- [ ] add tests proving real PDF traversal and non-linear targeting still work after the migration
-- [ ] add tests proving workspace operations can be initiated from explicit node refs
-- [ ] add docs/tests showing locator helpers resolve into node refs rather than becoming a second runtime object hierarchy
+- [x] add tests proving node-level actions can run via explicit node references without `current_node`
+- [x] add tests proving real PDF traversal and non-linear targeting still work after the migration
+- [x] add tests proving workspace operations can be initiated from explicit node refs
+- [x] add docs/tests showing locator helpers resolve into node refs rather than becoming a second runtime object hierarchy
 
 ---
 

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Callable
 from uuid import uuid4
 
 from docwright.core.events import RuntimeEventContext, RuntimeEventEnvelope
@@ -153,6 +153,31 @@ class NodeRef:
 RuntimeNodeView = NodeRef
 
 
+@dataclass(slots=True)
+class Locator:
+    """Thin helper that resolves into one or more ``NodeRef`` objects.
+
+    A ``Locator`` is intentionally not a second runtime object hierarchy. It is
+    only a reusable query helper around ``NodeRef`` resolution.
+    """
+
+    session: RuntimeSession
+    resolver: Callable[[], tuple[NodeRef, ...]]
+
+    def all(self) -> tuple[NodeRef, ...]:
+        return self.resolver()
+
+    def first(self) -> NodeRef | None:
+        results = self.all()
+        return None if not results else results[0]
+
+    def one(self) -> NodeRef:
+        results = self.all()
+        if len(results) != 1:
+            raise LookupError(f"locator resolved {len(results)} nodes, expected exactly 1")
+        return results[0]
+
+
 class RuntimeSession:
     """Core-owned runtime session."""
 
@@ -246,6 +271,50 @@ class RuntimeSession:
         """Return a runtime node reference for an explicit node id."""
 
         return NodeRef(session=self, raw_node=self._get_node(node_id))
+
+    def text(
+        self,
+        query: str,
+        *,
+        limit: int = 10,
+        scope: str = "document",
+        node_kinds: tuple[str, ...] | None = None,
+    ) -> Locator:
+        """Return a locator that resolves text search hits into node refs."""
+
+        return Locator(
+            session=self,
+            resolver=lambda: tuple(
+                self.node(hit.node_id)
+                for hit in self.search_text(
+                    query,
+                    limit=limit,
+                    scope=scope,
+                    node_kinds=node_kinds,
+                )
+            ),
+        )
+
+    def heading(
+        self,
+        query: str,
+        *,
+        limit: int = 10,
+        scope: str = "document",
+    ) -> Locator:
+        """Return a locator that resolves heading search hits into node refs."""
+
+        return Locator(
+            session=self,
+            resolver=lambda: tuple(
+                self.node(hit.node_id)
+                for hit in self.search_headings(
+                    query,
+                    limit=limit,
+                    scope=scope,
+                )
+            ),
+        )
 
     def current_node(self) -> NodeRef | None:
         node_id = self._model.step.node_id

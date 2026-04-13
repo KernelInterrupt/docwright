@@ -68,6 +68,23 @@ def test_codex_entry_delegates_usage_snapshot() -> None:
     assert usage.output_delta_chars == 3
 
 
+def test_codex_entry_allows_workspace_open_from_explicit_node_target() -> None:
+    entry = DocWrightCodexEntry.from_document(
+        make_document(),
+        capability=ManualTaskCapability(),
+    )
+
+    result = entry.execute_tool_call(
+        CodexToolCall(
+            call_id="node-workspace",
+            name="open_workspace",
+            arguments={"node_id": "node-2", "task": "annotation"},
+        )
+    )
+
+    assert result.output["workspace"]["body"] == "beta"
+
+
 def test_codex_entry_from_pdf_uses_document_backend_and_builds_runtime(monkeypatch: pytest.MonkeyPatch) -> None:
     fake_payload = {
         "document_id": "paper.pdf",

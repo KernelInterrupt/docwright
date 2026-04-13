@@ -9,7 +9,7 @@ from docwright.core.guardrails import (
     RuntimePermissions,
 )
 from docwright.core.models import RuntimeSessionModel, RuntimeSessionStatus
-from docwright.core.session import NodeRef, RuntimeNodeView, RuntimeSession
+from docwright.core.session import Locator, NodeRef, RuntimeNodeView, RuntimeSession
 from docwright.document.interfaces import NodeContextSlice, NodeRelationRef, TextSearchHit
 from docwright.workspace.profiles import WorkspaceProfile
 from docwright.workspace.registry import WorkspaceProfileRegistry
@@ -279,6 +279,24 @@ def test_runtime_session_can_return_explicit_node_refs_outside_current_node() ->
     assert [child.node_id for child in node.children()] == ["node-2"]
     assert [ancestor.node_id for ancestor in node.ancestry(include_self=True)] == ["root", "sec-2"]
     assert node.list_internal_links() == ()
+
+
+def test_runtime_session_locator_helpers_resolve_into_node_refs() -> None:
+    session = RuntimeSession(
+        RuntimeSessionModel(session_id="session-1", run_id="run-1", document_id="doc-1"),
+        document=DummyDocument(),
+    )
+
+    heading_locator = session.heading("Device B")
+    text_locator = session.text("text for node", limit=5)
+
+    assert isinstance(heading_locator, Locator)
+    assert isinstance(text_locator, Locator)
+    assert heading_locator.first() is not None
+    assert heading_locator.first().node_id == "sec-2"
+    assert heading_locator.one().node_id == "sec-2"
+    assert [node.node_id for node in text_locator.all()] == ["node-1", "node-2"]
+    assert all(isinstance(node, NodeRef) for node in text_locator.all())
 
 
 def test_runtime_session_get_context_uses_document_context_surface() -> None:
