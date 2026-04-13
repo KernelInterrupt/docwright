@@ -43,8 +43,8 @@ class CodexPromptAssembler:
             "Do not invent document structure, workspace contents, or step state.",
             "Do not treat raw IR JSON as the main interaction surface; use exported runtime tools instead.",
             "Tool arguments must match the published schemas exactly and must not include extra keys.",
-            "For reading, usually call current_node first, then get_context and/or search_text, then advance.",
-            "For non-linear documents, inspect structure, search headings, jump intentionally, and follow preserved internal links instead of forcing sequential traversal.",
+            "Prefer explicit node targeting: use get_node, get_structure, search_headings, scoped search_text, list_internal_links, and follow_internal_link to identify the node you intend to inspect or act on.",
+            "Treat current_node and advance as legacy compatibility helpers rather than the default runtime worldview.",
             "For workspace edits, use the controlled lifecycle: open_workspace -> describe_workspace -> read_source/read_body -> write_body/patch_body -> compile -> submit. Only use compile/submit when those tools are exported and the workspace reports readiness.",
         ]
 
@@ -66,7 +66,7 @@ class CodexPromptAssembler:
             parts.append("Repository AGENTS.md guidance:\n" + agents_md_text.strip())
 
         parts.append(
-            "Work one DocWright step at a time. Prefer structured tool calls over free-form explanation."
+            "Work one DocWright interaction slice at a time. Prefer structured tool calls over free-form explanation."
         )
         return "\n\n".join(part for part in parts if part)
 
@@ -77,8 +77,8 @@ class CodexPromptAssembler:
             return "Runtime session has no current node. Inspect state with tools and finish the step."
 
         lines = [
-            f"Run one DocWright step for session {session.model.session_id}.",
-            f"Current node: {node.node_id} ({node.kind}) on page {node.page_number}.",
+            f"Run one DocWright interaction slice for session {session.model.session_id}.",
+            f"Legacy current node cursor: {node.node_id} ({node.kind}) on page {node.page_number}.",
         ]
         text = node.text_content()
         if text:
@@ -90,7 +90,7 @@ class CodexPromptAssembler:
         policy = capability.guardrail_policy()
         rules = []
         if policy.require_highlight_before_advance:
-            rules.append("highlight is required before advance")
+            rules.append("if legacy advance is used, highlight is required before advance")
         if policy.max_workspaces_per_step is not None:
             rules.append(f"max {policy.max_workspaces_per_step} workspace open per step")
         return "Guardrails: " + (", ".join(rules) if rules else "default runtime rules only")

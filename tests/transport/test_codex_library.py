@@ -59,7 +59,7 @@ def test_runtime_host_bridge_exports_current_step_and_tool_names() -> None:
 
     contract = bridge.export_step()
 
-    assert "Current node: node-1" in contract.turn_prompt
+    assert "Legacy current node cursor: node-1" in contract.turn_prompt
     assert contract.metadata["session_id"] == "session-1"
     assert contract.metadata["document_id"] == "doc-1"
     assert contract.metadata["current_node_id"] == "node-1"
@@ -79,7 +79,7 @@ def test_runtime_host_bridge_executes_tools_and_refreshes_step_contract() -> Non
 
     assert results[0].output["node"]["node_id"] == "node-1"
     assert results[1].output["node"]["node_id"] == "node-2"
-    assert "Current node: node-2" in refreshed.turn_prompt
+    assert "Legacy current node cursor: node-2" in refreshed.turn_prompt
 
 
 def test_runtime_host_bridge_records_output_and_terminal_state() -> None:

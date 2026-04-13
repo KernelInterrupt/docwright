@@ -44,10 +44,10 @@ Scope:
 - [x] ensure tool payloads can carry or reconstruct stable node references without inventing provider-specific contracts
 
 ## L4. Prompt, capability, and host-loop migration
-- [ ] remove the default `current_node -> get_context -> advance` guidance from Codex-facing prompting
-- [ ] redefine guided/manual capabilities so sequential traversal is a strategy choice, not a runtime truth
-- [ ] update smoke/e2e host-loop expectations to reflect explicit node targeting rather than stepwise sequential progression
-- [ ] keep adapter/runtime boundaries clean while changing the public interaction style
+- [x] remove the default `current_node -> get_context -> advance` guidance from Codex-facing prompting
+- [x] redefine guided/manual capabilities so sequential traversal is a strategy choice, not a runtime truth
+- [x] update smoke/e2e host-loop expectations to reflect explicit node targeting rather than stepwise sequential progression
+- [x] keep adapter/runtime boundaries clean while changing the public interaction style
 
 ## L5. Guardrails, events, and compatibility cleanup
 - [ ] identify which existing guardrails are truly node-action guardrails versus sequential-reading-specific guardrails

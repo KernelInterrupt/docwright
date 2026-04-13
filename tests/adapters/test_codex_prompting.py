@@ -38,12 +38,13 @@ def test_prompt_assembler_renders_capability_and_context() -> None:
     assert "Codex-side agent operating DocWright through tools" in instructions
     assert "Do not treat raw IR JSON as the main interaction surface" in instructions
     assert "Tool arguments must match the published schemas exactly" in instructions
+    assert "Prefer explicit node targeting" in instructions
+    assert "Treat current_node and advance as legacy compatibility helpers" in instructions
     assert "open_workspace -> describe_workspace -> read_source/read_body -> write_body/patch_body -> compile -> submit" in instructions
-    assert "search headings, jump intentionally, and follow preserved internal links" in instructions
     assert "Active capability: guided_reading" in instructions
-    assert "highlight is required before advance" in instructions
+    assert "if legacy advance is used, highlight is required before advance" in instructions
     assert "workspace_editing" in instructions
     assert "session=session-1, run=run-1" in instructions
     assert "Repo rule." in instructions
-    assert "Current node: node-1" in turn_prompt
+    assert "Legacy current node cursor: node-1" in turn_prompt
     assert "after: node-2" in turn_prompt

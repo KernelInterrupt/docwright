@@ -24,6 +24,7 @@ def test_guided_reading_capability_sets_runtime_guardrails() -> None:
     policy = capability.guardrail_policy()
 
     assert capability.descriptor.name == GUIDED_READING_NAME
+    assert capability.descriptor.description == "Guided document-reading strategy over explicit node targets."
     assert policy.require_highlight_before_advance is True
     assert policy.max_workspaces_per_step == 1
 
@@ -49,5 +50,6 @@ def test_guided_reading_capability_keeps_skill_bundles_overridable() -> None:
 def test_guided_reading_strategy_text_lives_in_capability_resources() -> None:
     strategy_text = load_guided_reading_strategy()
 
+    assert "explicit node target" in strategy_text.lower()
     assert "highlight before advancing" in strategy_text.lower()
     assert "one workspace per step" in strategy_text.lower()

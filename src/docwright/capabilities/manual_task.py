@@ -31,7 +31,7 @@ class ManualTaskCapability(CapabilityProfile):
     descriptor: CapabilityDescriptor = field(
         default_factory=lambda: CapabilityDescriptor(
             name=MANUAL_TASK_NAME,
-            description="Manual document task mode with relaxed runtime guardrails.",
+            description="Manual node-targeted document task mode with relaxed runtime guardrails.",
             metadata={"mode": "manual_task"},
         )
     )

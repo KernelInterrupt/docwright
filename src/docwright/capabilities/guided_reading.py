@@ -41,7 +41,7 @@ class GuidedReadingCapability(CapabilityProfile):
     descriptor: CapabilityDescriptor = field(
         default_factory=lambda: CapabilityDescriptor(
             name=GUIDED_READING_NAME,
-            description="Structured guided-reading workflow",
+            description="Guided document-reading strategy over explicit node targets.",
             metadata={"mode": "guided_reading"},
         )
     )

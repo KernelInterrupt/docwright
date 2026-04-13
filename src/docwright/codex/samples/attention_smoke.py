@@ -5,7 +5,7 @@ This module intentionally uses the canonical integration contract:
 - load the prepared Attention IR fixture as a DocumentHandle
 - construct ``DocWrightCodexEntry.from_document(...)``
 - export one step contract
-- execute a small set of stable runtime tool calls
+- execute a small set of explicit-target/runtime inspection tool calls
 """
 
 from __future__ import annotations
@@ -33,10 +33,10 @@ def run_attention_fixture_smoke() -> dict[str, Any]:
     contract = entry.export_step()
     tool_results = entry.execute_tool_calls(
         (
-            CodexToolCall(call_id="call-1", name="current_node"),
-            CodexToolCall(call_id="call-2", name="get_context", arguments={"before": 1, "after": 1}),
+            CodexToolCall(call_id="call-1", name="get_node", arguments={"node_id": "para_0001"}),
+            CodexToolCall(call_id="call-2", name="get_context", arguments={"node_id": "para_0001", "before": 1, "after": 1}),
             CodexToolCall(call_id="call-3", name="search_text", arguments={"query": "attention", "limit": 3}),
-            CodexToolCall(call_id="call-4", name="advance"),
+            CodexToolCall(call_id="call-4", name="jump_to_node", arguments={"node_id": "sec_0001"}),
         )
     )
     return {
