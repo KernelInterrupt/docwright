@@ -104,6 +104,8 @@ Do **not** collapse these concepts back into one “agent profile” abstraction
 - `docs/target_repo_structure_v1.md`
 - `docs/pdf_ir_fixture_strategy_v1.md`
 - `docs/document_ir_contract_v1.md`
+- `docs/node_ref_locator_migration_v1.md`
+- `docs/node_ref_locator_execution_checklist_v1.md`
 - `docs/runtime_api_contract_v1.md`
 - `docs/workspace_session_contract_v1.md`
 - `docs/workspace_sandbox_design_v1.md`
@@ -249,13 +251,15 @@ The `docwright.document` package now acts as a unified facade:
 
 The R1-R8 checklist in `docs/execution_checklist_v1.md` is complete.
 The focused workspace completion checklist in `docs/workspace_completion_checklist_v1.md` is also complete.
+The post-milestone cleanup checklist in `docs/post_milestone_completion_checklist_v1.md` is also complete.
 
 If continuing implementation work, use this order:
 
 1. read `docs/prototype_migration_mapping_v1.md`
 2. review `docs/migration_checklist_v1.md`
-3. use `docs/post_milestone_completion_checklist_v1.md` for the remaining explicit unfinished items
-4. pick the next post-milestone slice without violating the Core / Adapter / Capability / Skill / Workspace boundaries
+3. review `docs/node_ref_locator_migration_v1.md`
+4. use `docs/node_ref_locator_execution_checklist_v1.md` for the next major runtime migration phase
+5. pick the next migration slice without violating the Core / Adapter / Capability / Skill / Workspace boundaries
 
 ---
 

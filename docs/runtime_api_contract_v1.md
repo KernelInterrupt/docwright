@@ -15,10 +15,10 @@ The design goal is Playwright-like:
 The runtime hosts stateful document interaction.
 
 It should let an agent runtime:
-- inspect current context
-- act on the current node
+- resolve explicit node references
+- inspect node-local context and structure
+- act on explicit node refs
 - open controlled workspace sessions
-- advance through a reading/action sequence
 - emit structured events
 
 The runtime itself should not decide policy.
@@ -30,6 +30,8 @@ The runtime itself should not decide policy.
 Minimum conceptual objects:
 
 - `RuntimeSession`
+- `NodeRef`
+- `Locator`
 - `DocumentHandle`
 - `PageHandle`
 - `NodeHandle`
@@ -45,21 +47,23 @@ The exact implementation can vary, but these semantics must exist.
 Do not change runtime state.
 
 Examples:
-- `session.current_node()`
-- `session.get_context(before=1, after=1)`
+- `session.node(node_id)`
+- `session.search_text(query)`
+- `session.search_headings(query)`
+- `locator.first()`
+- `node_ref.context(before=1, after=1)`
 - `document.page(3)`
 - `document.select(node_id)`
-- `node.text_content()`
-- `node.relations()`
+- `node_ref.text_content()`
+- `node_ref.relations()`
 
 ### Action operations
 Do change runtime state or produce lifecycle events.
 
 Examples:
-- `node.highlight(...)`
-- `node.warning(...)`
-- `node.open_workspace(...)`
-- `session.advance()`
+- `node_ref.highlight(...)`
+- `node_ref.warning(...)`
+- `node_ref.open_workspace(...)`
 
 This split must stay explicit.
 
@@ -69,18 +73,17 @@ This split must stay explicit.
 
 A runtime session should support at minimum:
 
-- access to the current runtime-visible node
-- access to nearby context
+- access to explicit node references
+- access to node-local context and structure
 - access to emitted events
-- advancing to the next node in reading order
 - enforcement of guardrails
 
 Representative shape:
 
 ```python
-session.current_node()
-session.get_context(before=1, after=1)
-session.advance()
+session.node("sec_intro")
+session.search_text("Transformer")
+session.search_headings("Introduction")
 session.events()
 ```
 
@@ -88,16 +91,16 @@ session.events()
 
 ## 5. Node action contract
 
-The current node should support at minimum:
+`NodeRef` should support at minimum:
 
 ### `highlight(level, reason=None)`
 Apply an attention marker.
 
 ### `warning(kind, severity, message, evidence=None)`
-Attach a warning to the current node.
+Attach a warning to the referenced node.
 
 ### `open_workspace(task, capability=None, language=None)`
-Open a controlled editing/session workspace derived from the node.
+Open a controlled editing/session workspace derived from the referenced node.
 
 These actions must emit structured runtime events.
 
@@ -108,9 +111,9 @@ These actions must emit structured runtime events.
 Guardrails belong to Core.
 
 Examples of valid runtime guardrails:
-- require highlight before advance in a guided-reading-configured capability
-- forbid duplicate highlight for the same step when policy requires uniqueness
-- forbid opening more than one workspace per node step when configured
+- forbid invalid node-targeted actions when policy disallows them
+- forbid duplicate highlight for the same targeted node when policy requires uniqueness
+- forbid opening more than one workspace for the same targeted node when configured
 - forbid invalid workspace state transitions
 
 Guardrails should be configurable enough that Core can host different capabilities later.
@@ -132,7 +135,7 @@ Core events should be capability-neutral where possible.
 
 Examples:
 - `runtime.started`
-- `node.entered`
+- `node.resolved`
 - `highlight.applied`
 - `warning.raised`
 - `workspace.opened`
@@ -162,7 +165,24 @@ The important part is that:
 
 ---
 
-## 9. Degradation rule
+## 9. Legacy note
+
+The current implementation still exposes sequential-reading-centered concepts
+such as:
+
+- `session.current_node()`
+- `session.advance()`
+
+Those remain part of the implemented compatibility surface today, but they
+should be treated as legacy public concepts rather than the long-term runtime
+center. The migration direction is tracked in:
+
+- `docs/node_ref_locator_migration_v1.md`
+- `docs/node_ref_locator_execution_checklist_v1.md`
+
+---
+
+## 10. Degradation rule
 
 Runtime API consumers must tolerate imperfect document structure.
 

@@ -22,14 +22,15 @@ Examples:
 - `document.select_*()`
 - `page.*`
 - `node.*`
-- `locator.highlight()`
-- `locator.warning()`
+- `node_ref.highlight()`
+- `node_ref.warning()`
+- `locator.first()`
 
 ### 2. Workspace sessions
 This is the generalized form of the old annotation sandbox.
 
 Core should expose something like:
-- `node.open_workspace(task="annotation", capability="summary_note")`
+- `node_ref.open_workspace(task="annotation", capability="summary_note")`
 - `workspace.read_body()`
 - `workspace.write_body()`
 - `workspace.patch_body()`
@@ -39,7 +40,7 @@ Core should expose something like:
 
 ### 3. Runtime state and guardrails
 Core owns:
-- current node / active locator state
+- explicit node-ref resolution and guardrails around node-level actions
 - session lifecycle
 - permission checks
 - event emission
@@ -96,7 +97,7 @@ If a capability is about selecting a task mode or ruleset, it belongs in a capab
 
 ### Wrong: Core hardcodes guided-reading policy
 Examples:
-- every paragraph must be interpreted as a reading step forever
+- every paragraph must be interpreted as a sequential reading step forever
 - annotation types are hardcoded business logic rather than workspace capabilities
 - advice/warning/highlight sequencing is fused into one built-in agent loop
 
@@ -121,3 +122,8 @@ The old “guided reading pipeline” should be reframed as:
 - one capability profile (`guided_reading`)
 - using reusable tool bundles
 - hosted through any compatible agent adapter
+
+Legacy note:
+- the current implementation still carries `current_node` / `advance` vocabulary
+- that vocabulary should not define future public runtime APIs
+- the migration target is recorded in `docs/node_ref_locator_migration_v1.md`

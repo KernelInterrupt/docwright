@@ -48,7 +48,7 @@ Builds Codex-facing guidance from:
 - capability profile
 - guardrail summary
 - skill/tool summary
-- current runtime step
+- currently exposed runtime contract
 - optional `AGENTS.md`
 
 ### `src/docwright/adapters/agent/codex_tools.py`
@@ -97,12 +97,11 @@ The adapter does **not** own:
 The bridge exposes DocWright actions as Codex-callable tools.
 
 ### Runtime tools
-- `current_node`
-- `get_context`
+- explicit node-ref lookup/query tools
+- node-local context/structure tools
 - `highlight`
 - `warning`
 - `open_workspace`
-- `advance`
 
 ### Workspace tools
 - `read_body`
@@ -114,6 +113,13 @@ The bridge exposes DocWright actions as Codex-callable tools.
 
 These come from the active `CapabilityProfile` and its `SkillBundle`s where
 possible. Core guardrails remain authoritative.
+
+Legacy note:
+- the current implementation still exposes `current_node` and `advance`
+- these should be treated as compatibility-era sequential-reading tools rather
+  than the long-term public center
+- future adapter guidance should center explicit node refs and locator-backed
+  targeting
 
 ---
 
@@ -142,12 +148,12 @@ The adapter exports instructions from four layers:
 
 ## 6. Primary bridge flow
 
-For each runtime step, the normal integration flow is:
+For each runtime interaction slice, the normal integration flow is:
 
-1. DocWright exports a `CodexRuntimeContract` for the current step.
+1. DocWright exports a `CodexRuntimeContract` for the current runtime surface.
 2. A Codex host reads:
    - instructions
-   - current-step prompt
+   - current runtime prompt/context
    - available tool schemas
 3. Codex decides which tool(s) to call.
 4. The host sends tool calls back to `CodexAdapter`.

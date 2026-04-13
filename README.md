@@ -17,7 +17,8 @@ It is **not** a chatbot and **not** a one-shot summarizer.
 Think of DocWright as:
 - a **document runtime**
 - a **stateful automation kernel** for document agents
-- a runtime that supports sequential traversal, structure inspection, and non-linear targeting
+- a runtime organized around explicit document targets / node references
+- a runtime that supports structure inspection and non-linear targeting first, with traversal strategies layered on top
 - a host for multiple agent runtimes such as Codex-like systems
 
 Not as:
@@ -168,7 +169,6 @@ ready, including:
 ```python
 from docwright.adapters.agent.codex_types import CodexToolCall
 
-current = entry.execute_tool_call(CodexToolCall(call_id="1", name="current_node"))
 structure = entry.execute_tool_call(CodexToolCall(call_id="2", name="get_structure"))
 search = entry.execute_tool_call(
     CodexToolCall(call_id="3", name="search_text", arguments={"query": "attention", "limit": 3})
@@ -176,7 +176,7 @@ search = entry.execute_tool_call(
 headings = entry.execute_tool_call(
     CodexToolCall(call_id="4", name="search_headings", arguments={"query": "results", "limit": 3})
 )
-advanced = entry.execute_tool_call(CodexToolCall(call_id="5", name="advance"))
+jumped = entry.execute_tool_call(CodexToolCall(call_id="5", name="jump_to_node", arguments={"node_id": "sec_intro"}))
 ```
 
 ### 4. Recommended host loop
@@ -209,15 +209,10 @@ For low-error host usage, keep these rules stable:
    Use the runtime entry plus exported tools.
 2. **Use tool schemas exactly.**
    Do not add extra keys.
-3. **For sequential reading, prefer this order:**
-   - `current_node`
-   - `get_context` and/or `search_text`
-   - `advance`
-4. **For non-linear documents, prefer this order:**
-   - `current_node`
-   - `get_structure`
-   - `search_headings` and/or scoped `search_text`
-   - `jump_to_node` or `follow_internal_link`
+3. **Prefer explicit target selection over implicit cursor-style reading.**
+   Use `get_structure`, `search_headings`, scoped `search_text`, `jump_to_node`, and `follow_internal_link` to identify the node you intend to inspect or act on.
+4. **Treat sequential-reading tools as legacy compatibility paths.**
+   If `current_node` or `advance` are still exposed, treat them as older traversal helpers rather than the long-term runtime center.
 5. **For workspace edits, prefer this order:**
    - `open_workspace`
    - `describe_workspace`
@@ -272,15 +267,15 @@ This demo intentionally uses the canonical path internally:
 - load Attention IR fixture as a `DocumentHandle`
 - construct `DocWrightCodexEntry.from_document(...)`
 - export a step contract
-- execute `current_node`, `get_context`, `search_text`, and `advance`
-- demonstrate the baseline direct-library loop before richer tree/jump navigation flows
+- execute explicit runtime targeting and inspection tools
+- demonstrate the baseline direct-library loop before richer locator-backed flows land
 
 ---
 
 ## What is implemented right now
 
 Current baseline includes:
-- runtime sessions with current-node, context, structure inspection, scoped keyword search, heading search, jump/follow-link navigation, highlight, warning, open-workspace, and advance actions
+- runtime sessions with structure inspection, scoped keyword search, heading search, jump/follow-link navigation, highlight, warning, open-workspace, and compatibility-era cursor actions
 - action-capable runtime node views over document handles
 - workspace sessions with read/write/patch/read-source/compile/submit lifecycle
 - executable workspace templates with declarative editable-region rules and assembled-source views
@@ -380,9 +375,15 @@ Other important docs:
 - `docs/agent_integration_model_v1.md`
 - `docs/document_ir_contract_v1.md`
 - `docs/docwright_document_boundary_v1.md`
+- `docs/node_ref_locator_migration_v1.md`
+- `docs/node_ref_locator_execution_checklist_v1.md`
 - `docs/runtime_api_contract_v1.md`
 - `docs/codex_adapter_design_v1.md`
 - `docs/codex_direct_library_integration_v1.md`
+
+Migration note:
+- the currently implemented API still exposes `current_node` / `advance`
+- the planned public direction is `NodeRef` / `Locator` centered and is tracked in `docs/node_ref_locator_migration_v1.md`
 
 ---
 
