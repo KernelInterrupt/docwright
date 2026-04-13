@@ -30,3 +30,15 @@ def test_runtime_guardrail_policy_defaults_remain_capability_neutral() -> None:
 
     assert policy.require_highlight_before_advance is False
     assert policy.max_workspaces_per_step is None
+    assert policy.legacy_sequential_guardrails() == {}
+    assert policy.selected_node_action_guardrails() == {}
+
+
+def test_runtime_guardrail_policy_separates_legacy_and_selected_node_rules() -> None:
+    policy = RuntimeGuardrailPolicy(
+        require_highlight_before_advance=True,
+        max_workspaces_per_step=2,
+    )
+
+    assert policy.legacy_sequential_guardrails() == {"highlight_before_advance": True}
+    assert policy.selected_node_action_guardrails() == {"max_workspaces_per_selected_node": 2}

@@ -419,6 +419,7 @@ class RuntimeSession:
             {
                 "requested_node_id": node_id,
                 "resolved_node_id": resolved_focus_id,
+                "target_node_id": resolved_focus_id,
             },
         )
         self.emit_event(EventName(EventFamily.NODE, "entered"))
@@ -457,11 +458,9 @@ class RuntimeSession:
             raise KeyError("no node is available for highlight")
         if self._model.step.node_id == target_node_id:
             self._model.step.highlight_count += 1
-        payload: dict[str, Any] = {"level": level}
+        payload: dict[str, Any] = {"level": level, "target_node_id": target_node_id}
         if reason is not None:
             payload["reason"] = reason
-        if target_node_id != self._model.step.node_id:
-            payload["target_node_id"] = target_node_id
         return self.emit_event(EventName(EventFamily.HIGHLIGHT, "applied"), payload)
 
     def record_warning(
@@ -484,9 +483,8 @@ class RuntimeSession:
             "severity": severity,
             "message": message,
             "evidence": list(evidence),
+            "target_node_id": target_node_id,
         }
-        if target_node_id != self._model.step.node_id:
-            payload["target_node_id"] = target_node_id
         return self.emit_event(
             EventName(EventFamily.WARNING, "raised"),
             payload,
@@ -600,6 +598,7 @@ class RuntimeSession:
                 "task": task,
                 "capability": capability,
                 "language": language,
+                "target_node_id": target_node.node_id if target_node is not None else None,
             },
             workspace_id=workspace_id,
         )
@@ -640,9 +639,7 @@ class RuntimeSession:
         if target_node_id == self._model.step.node_id:
             self._model.step.workspace_open_count += 1
             self._model.step.workspace_opened = True
-        payload = {"workspace_id": workspace_id, "task": task}
-        if target_node_id != self._model.step.node_id:
-            payload["target_node_id"] = target_node_id
+        payload = {"workspace_id": workspace_id, "task": task, "target_node_id": target_node_id}
         return self.emit_event(
             EventName(EventFamily.WORKSPACE, "opened"),
             payload,

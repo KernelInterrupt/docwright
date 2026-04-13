@@ -105,6 +105,7 @@ Do **not** collapse these concepts back into one “agent profile” abstraction
 - `docs/pdf_ir_fixture_strategy_v1.md`
 - `docs/document_ir_contract_v1.md`
 - `docs/node_ref_locator_migration_v1.md`
+- `docs/node_ref_compatibility_layer_v1.md`
 - `docs/node_ref_locator_execution_checklist_v1.md`
 - `docs/runtime_api_contract_v1.md`
 - `docs/workspace_session_contract_v1.md`

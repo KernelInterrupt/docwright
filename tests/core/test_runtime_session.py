@@ -358,6 +358,7 @@ def test_runtime_session_record_highlight_updates_step_and_emits_event() -> None
     assert session.model.step.highlight_count == 1
     assert event.as_protocol_event().event_name == "highlight.applied"
     assert event.as_protocol_event().payload["reason"] == "key claim"
+    assert event.as_protocol_event().payload["target_node_id"] == "node-1"
 
 
 def test_node_ref_actions_can_target_non_current_nodes_explicitly() -> None:
@@ -411,6 +412,7 @@ def test_runtime_session_record_workspace_opened_updates_step_and_emits_event() 
     assert session.model.step.workspace_opened is True
     assert session.model.step.workspace_open_count == 1
     assert event.as_protocol_event().event_name == "workspace.opened"
+    assert event.as_protocol_event().payload["target_node_id"] == "node-1"
 
 
 def test_runtime_session_advance_moves_to_next_node_and_resets_step_state() -> None:
@@ -449,6 +451,7 @@ def test_runtime_session_jump_to_node_repositions_focus_without_using_advance_gu
     assert node.node_id == "node-2"
     assert session.model.step.index == 1
     assert [event.as_protocol_event().event_name for event in session.events()][-2:] == ["node.jumped", "node.entered"]
+    assert session.events()[-2].as_protocol_event().payload["target_node_id"] == "node-2"
 
 
 def test_runtime_session_advance_requires_highlight_when_policy_enabled() -> None:

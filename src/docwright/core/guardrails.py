@@ -62,7 +62,29 @@ class RuntimePermissions:
 
 @dataclass(slots=True, frozen=True)
 class RuntimeGuardrailPolicy:
-    """Capability-selectable runtime rules enforced by Core."""
+    """Capability-selectable runtime rules enforced by Core.
+
+    The policy currently contains a mix of:
+
+    - legacy sequential-reading compatibility rules
+    - selected-node action limits that remain useful during migration
+    """
 
     require_highlight_before_advance: bool = False
     max_workspaces_per_step: int | None = None
+
+    def legacy_sequential_guardrails(self) -> dict[str, Any]:
+        """Return active legacy sequential-reading compatibility guardrails."""
+
+        rules: dict[str, Any] = {}
+        if self.require_highlight_before_advance:
+            rules["highlight_before_advance"] = True
+        return rules
+
+    def selected_node_action_guardrails(self) -> dict[str, Any]:
+        """Return active selected-node action guardrails."""
+
+        rules: dict[str, Any] = {}
+        if self.max_workspaces_per_step is not None:
+            rules["max_workspaces_per_selected_node"] = self.max_workspaces_per_step
+        return rules

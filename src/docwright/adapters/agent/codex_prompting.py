@@ -89,10 +89,11 @@ class CodexPromptAssembler:
     def _format_guardrail_policy(self, capability: CapabilityProfile) -> str:
         policy = capability.guardrail_policy()
         rules = []
-        if policy.require_highlight_before_advance:
-            rules.append("if legacy advance is used, highlight is required before advance")
-        if policy.max_workspaces_per_step is not None:
-            rules.append(f"max {policy.max_workspaces_per_step} workspace open per step")
+        if policy.legacy_sequential_guardrails().get("highlight_before_advance"):
+            rules.append("legacy sequential compatibility: highlight is required before advance")
+        max_workspaces = policy.selected_node_action_guardrails().get("max_workspaces_per_selected_node")
+        if max_workspaces is not None:
+            rules.append(f"max {max_workspaces} workspace open per selected node")
         return "Guardrails: " + (", ".join(rules) if rules else "default runtime rules only")
 
     def _format_skill_summary(self, capability: CapabilityProfile) -> str:

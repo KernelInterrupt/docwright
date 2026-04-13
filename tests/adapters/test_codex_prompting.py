@@ -42,7 +42,7 @@ def test_prompt_assembler_renders_capability_and_context() -> None:
     assert "Treat current_node and advance as legacy compatibility helpers" in instructions
     assert "open_workspace -> describe_workspace -> read_source/read_body -> write_body/patch_body -> compile -> submit" in instructions
     assert "Active capability: guided_reading" in instructions
-    assert "if legacy advance is used, highlight is required before advance" in instructions
+    assert "legacy sequential compatibility: highlight is required before advance" in instructions
     assert "workspace_editing" in instructions
     assert "session=session-1, run=run-1" in instructions
     assert "Repo rule." in instructions

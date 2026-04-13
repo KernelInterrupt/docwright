@@ -11,6 +11,10 @@ Execution work for this migration is tracked in:
 
 - `docs/node_ref_locator_execution_checklist_v1.md`
 
+Current temporary compatibility behavior is documented in:
+
+- `docs/node_ref_compatibility_layer_v1.md`
+
 ---
 
 ## 1. Why this migration is needed

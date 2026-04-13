@@ -376,6 +376,7 @@ Other important docs:
 - `docs/document_ir_contract_v1.md`
 - `docs/docwright_document_boundary_v1.md`
 - `docs/node_ref_locator_migration_v1.md`
+- `docs/node_ref_compatibility_layer_v1.md`
 - `docs/node_ref_locator_execution_checklist_v1.md`
 - `docs/runtime_api_contract_v1.md`
 - `docs/codex_adapter_design_v1.md`

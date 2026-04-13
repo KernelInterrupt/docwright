@@ -50,10 +50,10 @@ Scope:
 - [x] keep adapter/runtime boundaries clean while changing the public interaction style
 
 ## L5. Guardrails, events, and compatibility cleanup
-- [ ] identify which existing guardrails are truly node-action guardrails versus sequential-reading-specific guardrails
-- [ ] remove or redesign highlight-before-advance style rules once `advance` is no longer public-center API
-- [ ] redesign node navigation/action events around explicit target refs where needed
-- [ ] document any temporary compatibility layer that preserves old APIs during migration
+- [x] identify which existing guardrails are truly node-action guardrails versus sequential-reading-specific guardrails
+- [x] remove or redesign highlight-before-advance style rules once `advance` is no longer public-center API
+- [x] redesign node navigation/action events around explicit target refs where needed
+- [x] document any temporary compatibility layer that preserves old APIs during migration
 
 ## L6. Regression and acceptance coverage
 - [ ] add tests proving node-level actions can run via explicit node references without `current_node`
