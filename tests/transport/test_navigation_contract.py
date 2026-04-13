@@ -20,12 +20,14 @@ def test_navigation_fixture_supports_search_jump_and_internal_link_tools() -> No
     contract = entry.export_step()
     tool_names = [tool.name for tool in contract.tools]
 
-    assert tool_names[:4] == ["current_node", "get_context", "search_text", "advance"]
+    assert tool_names[:4] == ["get_node", "get_context", "search_text", "get_structure"]
     assert "get_structure" in tool_names
     assert "search_headings" in tool_names
     assert "jump_to_node" in tool_names
     assert "list_internal_links" in tool_names
     assert "follow_internal_link" in tool_names
+    assert "current_node" in tool_names
+    assert "advance" in tool_names
 
     headings = entry.execute_tool_call(
         CodexToolCall(call_id="1", name="search_headings", arguments={"query": "Device B", "limit": 5})

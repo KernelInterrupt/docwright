@@ -63,7 +63,7 @@ def test_runtime_host_bridge_exports_current_step_and_tool_names() -> None:
     assert contract.metadata["session_id"] == "session-1"
     assert contract.metadata["document_id"] == "doc-1"
     assert contract.metadata["current_node_id"] == "node-1"
-    assert bridge.available_tool_names()[:4] == ("current_node", "get_context", "search_text", "advance")
+    assert bridge.available_tool_names()[:4] == ("get_node", "get_context", "search_text", "get_structure")
 
 
 def test_runtime_host_bridge_executes_tools_and_refreshes_step_contract() -> None:

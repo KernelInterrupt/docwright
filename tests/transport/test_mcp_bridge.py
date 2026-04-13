@@ -27,7 +27,7 @@ def test_mcp_bridge_reuses_existing_exported_step_contract() -> None:
     assert server["server_name"] == "docwright"
     assert server["transport"] == "mcp_wrapper"
     assert server["metadata"]["adapter"] == "codex"
-    assert server["tools"][0]["name"] == "current_node"
+    assert server["tools"][0]["name"] == "get_node"
     assert any(tool["name"] == "open_workspace" for tool in server["tools"])
 
 

@@ -38,10 +38,10 @@ Scope:
 - [x] keep any temporary node-selection helper internal or compatibility-scoped rather than the new public center
 
 ## L3. Tool surface migration
-- [ ] redesign navigation tools so node-level reads/actions operate on explicit node references or node-targeted arguments
-- [ ] remove `advance` from the primary tool worldview
-- [ ] reduce `jump` from a public navigation center to a compatibility/helper role or replace it with explicit node-ref-returning flows
-- [ ] ensure tool payloads can carry or reconstruct stable node references without inventing provider-specific contracts
+- [x] redesign navigation tools so node-level reads/actions operate on explicit node references or node-targeted arguments
+- [x] remove `advance` from the primary tool worldview
+- [x] reduce `jump` from a public navigation center to a compatibility/helper role or replace it with explicit node-ref-returning flows
+- [x] ensure tool payloads can carry or reconstruct stable node references without inventing provider-specific contracts
 
 ## L4. Prompt, capability, and host-loop migration
 - [ ] remove the default `current_node -> get_context -> advance` guidance from Codex-facing prompting

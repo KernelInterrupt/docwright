@@ -89,7 +89,7 @@ def test_codex_adapter_exports_step_contract(tmp_path: Path) -> None:
     assert "Prefer tools." in contract.instructions
     assert "Codex-side agent operating DocWright through tools" in contract.instructions
     assert "Current node: node-1" in contract.turn_prompt
-    assert [tool.name for tool in contract.tools][:4] == ["current_node", "get_context", "search_text", "advance"]
+    assert [tool.name for tool in contract.tools][:4] == ["get_node", "get_context", "search_text", "get_structure"]
 
 
 def test_codex_adapter_fake_driver_runs_loop_until_tool_calls_stop() -> None:

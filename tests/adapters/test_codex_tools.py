@@ -102,15 +102,16 @@ def test_tool_registry_filters_tools_from_active_skills() -> None:
 
     names = [tool.name for tool in tools]
     assert names == [
-        "current_node",
+        "get_node",
         "get_context",
         "search_text",
-        "advance",
         "get_structure",
         "search_headings",
         "jump_to_node",
         "list_internal_links",
         "follow_internal_link",
+        "current_node",
+        "advance",
         "highlight",
         "warning",
         "open_workspace",
@@ -123,9 +124,10 @@ def test_tool_registry_filters_tools_from_active_skills() -> None:
         "submit",
     ]
     descriptions = {tool.name: tool.description for tool in tools}
-    assert descriptions["current_node"] == "Inspect the current DocWright node. This is usually the first call in each step."
-    assert descriptions["get_structure"] == "Inspect parent/children/siblings/ancestry metadata for the current node without changing runtime focus."
-    assert descriptions["follow_internal_link"] == "Follow one preserved internal-link relation and update runtime focus to the resolved target node."
+    assert descriptions["get_node"] == "Resolve an explicit DocWright node by stable node_id and return its node reference payload."
+    assert descriptions["current_node"] == "Inspect the legacy current DocWright node compatibility cursor when older flows still depend on it."
+    assert descriptions["get_structure"] == "Inspect parent/children/siblings/ancestry metadata for an explicit node or the legacy current node."
+    assert descriptions["follow_internal_link"] == "Follow one preserved internal-link relation and return the resolved target node, updating legacy focus only for compatibility."
     assert descriptions["compile"] == "Compile the current workspace body and return structured success or error details plus the workspace_id."
 
 
@@ -139,10 +141,15 @@ def test_tool_registry_executes_runtime_navigation_and_workspace_tools() -> None
         capability=capability,
         call=CodexToolCall(call_id="1", name="current_node"),
     )
+    explicit = registry.execute_tool(
+        session=session,
+        capability=capability,
+        call=CodexToolCall(call_id="1x", name="get_node", arguments={"node_id": "sec-2"}),
+    )
     structure = registry.execute_tool(
         session=session,
         capability=capability,
-        call=CodexToolCall(call_id="1a", name="get_structure"),
+        call=CodexToolCall(call_id="1a", name="get_structure", arguments={"node_id": "sec-2"}),
     )
     searched = registry.execute_tool(
         session=session,
@@ -172,7 +179,7 @@ def test_tool_registry_executes_runtime_navigation_and_workspace_tools() -> None
     highlighted = registry.execute_tool(
         session=session,
         capability=capability,
-        call=CodexToolCall(call_id="2", name="highlight", arguments={"level": "important"}),
+        call=CodexToolCall(call_id="2", name="highlight", arguments={"node_id": "node-1", "level": "important"}),
     )
     opened = registry.execute_tool(
         session=session,
@@ -181,6 +188,7 @@ def test_tool_registry_executes_runtime_navigation_and_workspace_tools() -> None
             call_id="3",
             name="open_workspace",
             arguments={
+                "node_id": "node-2",
                 "task": "annotation",
                 "workspace_profile": "latex_annotation",
                 "template_id": "default_annotation_tex",
@@ -212,20 +220,26 @@ def test_tool_registry_executes_runtime_navigation_and_workspace_tools() -> None
     )
 
     assert current.output["node"]["node_id"] == "node-1"
-    assert structure.output["structure"]["parent_node_id"] == "sec-1"
+    assert explicit.output["node"]["node_id"] == "sec-2"
+    assert explicit.output["node"]["ref"]["node_id"] == "sec-2"
+    assert structure.output["structure"]["parent_node_id"] == "root"
     assert searched.output["hits"][0]["node_id"] == "node-1"
+    assert searched.output["hits"][0]["node_ref"]["node_id"] == "node-1"
     assert searched.output["hits"][0]["node_kind"] == "paragraph"
     assert heading_hits.output["hits"][0]["node_id"] == "sec-2"
     assert links.output["links"][0]["target_node_id"] == "sec-2"
+    assert links.output["links"][0]["target_node_ref"]["node_id"] == "sec-2"
     assert jumped.output["node"]["node_id"] == "node-2"
     assert followed.output["node"]["node_id"] == "node-2"
     assert highlighted.output["event"]["name"] == "highlight.applied"
+    assert highlighted.output["event"]["payload"]["target_node_id"] == "node-1"
     assert opened.output["workspace_id"] == workspace_id
     assert opened.output["workspace"]["workspace_profile"] == "latex_annotation"
     assert opened.output["workspace"]["template_id"] == "default_annotation_tex"
     assert opened.output["workspace"]["body_kind"] == "latex_body"
     assert opened.output["workspace"]["compiler_profile"] == "tectonic"
     assert opened.output["workspace"]["compile_ready"] is True
+    assert opened.output["workspace"]["body"] == "beta"
     assert described.output["workspace_id"] == workspace_id
     assert described.output["workspace"]["workspace_id"] == workspace_id
     assert described.output["workspace"]["workspace_profile"] == "latex_annotation"

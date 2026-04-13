@@ -28,15 +28,16 @@ class CodexToolRegistry:
     ) -> tuple[CodexToolSpec, ...]:
         if capability is None:
             tool_names = (
-                "current_node",
+                "get_node",
                 "get_context",
                 "search_text",
-                "advance",
                 "get_structure",
                 "search_headings",
                 "jump_to_node",
                 "list_internal_links",
                 "follow_internal_link",
+                "current_node",
+                "advance",
             )
         else:
             tool_names = tuple(
@@ -89,17 +90,30 @@ class CodexToolRegistry:
     def _spec_current_node(self) -> CodexToolSpec:
         return CodexToolSpec(
             name="current_node",
-            description="Return the current runtime-visible document node.",
+            description="Return the legacy current runtime node compatibility cursor.",
             input_schema={"type": "object", "properties": {}, "additionalProperties": False},
+        )
+
+    def _spec_get_node(self) -> CodexToolSpec:
+        return CodexToolSpec(
+            name="get_node",
+            description="Return an explicit node reference payload for a requested node id.",
+            input_schema={
+                "type": "object",
+                "properties": {"node_id": {"type": "string"}},
+                "required": ["node_id"],
+                "additionalProperties": False,
+            },
         )
 
     def _spec_get_context(self) -> CodexToolSpec:
         return CodexToolSpec(
             name="get_context",
-            description="Return nearby reading-order node IDs around the current node.",
+            description="Return nearby reading-order node IDs around an explicit node or the legacy current node.",
             input_schema={
                 "type": "object",
                 "properties": {
+                    "node_id": {"type": "string"},
                     "before": {"type": "integer", "minimum": 0, "default": 1},
                     "after": {"type": "integer", "minimum": 0, "default": 1},
                 },
@@ -110,7 +124,7 @@ class CodexToolRegistry:
     def _spec_get_structure(self) -> CodexToolSpec:
         return CodexToolSpec(
             name="get_structure",
-            description="Return hierarchy metadata for the current node or an explicitly requested node.",
+            description="Return hierarchy metadata for an explicit node or the legacy current node.",
             input_schema={
                 "type": "object",
                 "properties": {
@@ -156,7 +170,7 @@ class CodexToolRegistry:
     def _spec_jump_to_node(self) -> CodexToolSpec:
         return CodexToolSpec(
             name="jump_to_node",
-            description="Move runtime focus to a target node or to the first focusable descendant of a structural node.",
+            description="Compatibility helper: move runtime focus to a target node or to the first focusable descendant of a structural node.",
             input_schema={
                 "type": "object",
                 "properties": {"node_id": {"type": "string"}},
@@ -179,7 +193,7 @@ class CodexToolRegistry:
     def _spec_follow_internal_link(self) -> CodexToolSpec:
         return CodexToolSpec(
             name="follow_internal_link",
-            description="Follow one internal-link relation and update runtime focus to its resolved target.",
+            description="Follow one internal-link relation and return the resolved target node, updating legacy runtime focus for compatibility.",
             input_schema={
                 "type": "object",
                 "properties": {
@@ -194,10 +208,11 @@ class CodexToolRegistry:
     def _spec_highlight(self) -> CodexToolSpec:
         return CodexToolSpec(
             name="highlight",
-            description="Apply a highlight decision to the current node.",
+            description="Apply a highlight decision to an explicit node or to the legacy current node.",
             input_schema={
                 "type": "object",
                 "properties": {
+                    "node_id": {"type": "string"},
                     "level": {"type": "string"},
                     "reason": {"type": "string"},
                 },
@@ -209,10 +224,11 @@ class CodexToolRegistry:
     def _spec_warning(self) -> CodexToolSpec:
         return CodexToolSpec(
             name="warning",
-            description="Raise a structured warning on the current node.",
+            description="Raise a structured warning on an explicit node or on the legacy current node.",
             input_schema={
                 "type": "object",
                 "properties": {
+                    "node_id": {"type": "string"},
                     "kind": {"type": "string"},
                     "severity": {"type": "string"},
                     "message": {"type": "string"},
@@ -226,10 +242,11 @@ class CodexToolRegistry:
     def _spec_open_workspace(self) -> CodexToolSpec:
         return CodexToolSpec(
             name="open_workspace",
-            description="Open a controlled workspace session for the current node.",
+            description="Open a controlled workspace session for an explicit node or for the legacy current node.",
             input_schema={
                 "type": "object",
                 "properties": {
+                    "node_id": {"type": "string"},
                     "task": {"type": "string"},
                     "capability": {"type": "string"},
                     "language": {"type": "string"},
@@ -247,7 +264,7 @@ class CodexToolRegistry:
     def _spec_advance(self) -> CodexToolSpec:
         return CodexToolSpec(
             name="advance",
-            description="Advance the runtime session to the next node in reading order.",
+            description="Legacy sequential-reading helper that advances the runtime session to the next node in reading order.",
             input_schema={"type": "object", "properties": {}, "additionalProperties": False},
         )
 
@@ -334,13 +351,23 @@ class CodexToolRegistry:
         node = session.current_node()
         return {"node": None if node is None else self._serialize_node(node)}
 
+    def _handle_get_node(self, *, session: RuntimeSession, capability: CapabilityProfile | None, arguments: dict[str, Any]) -> dict[str, Any]:
+        node = session.node(arguments["node_id"])
+        return {"node": self._serialize_node(node)}
+
     def _handle_get_context(self, *, session: RuntimeSession, capability: CapabilityProfile | None, arguments: dict[str, Any]) -> dict[str, Any]:
         context = session.get_context(
+            node_id=arguments.get("node_id"),
             before=int(arguments.get("before", 1)),
             after=int(arguments.get("after", 1)),
         )
         return {
             "focus_node_id": context.focus_node_id,
+            "focus_node_ref": self._serialize_node_ref(
+                session.node(context.focus_node_id)
+            )
+            if context.focus_node_id
+            else None,
             "before_node_ids": list(context.before_node_ids),
             "after_node_ids": list(context.after_node_ids),
         }
@@ -396,11 +423,16 @@ class CodexToolRegistry:
         }
 
     def _handle_highlight(self, *, session: RuntimeSession, capability: CapabilityProfile | None, arguments: dict[str, Any]) -> dict[str, Any]:
-        event = session.record_highlight(level=arguments["level"], reason=arguments.get("reason"))
+        event = session.record_highlight(
+            node_id=arguments.get("node_id"),
+            level=arguments["level"],
+            reason=arguments.get("reason"),
+        )
         return {"event": event.as_protocol_event().as_dict()}
 
     def _handle_warning(self, *, session: RuntimeSession, capability: CapabilityProfile | None, arguments: dict[str, Any]) -> dict[str, Any]:
         event = session.record_warning(
+            node_id=arguments.get("node_id"),
             kind=arguments["kind"],
             severity=arguments["severity"],
             message=arguments["message"],
@@ -410,6 +442,7 @@ class CodexToolRegistry:
 
     def _handle_open_workspace(self, *, session: RuntimeSession, capability: CapabilityProfile | None, arguments: dict[str, Any]) -> dict[str, Any]:
         workspace = session.open_workspace(
+            node_id=arguments.get("node_id"),
             task=arguments["task"],
             capability=arguments.get("capability"),
             language=arguments.get("language"),
@@ -474,6 +507,7 @@ class CodexToolRegistry:
         text_getter = getattr(node, "text_content", None)
         relation_getter = getattr(node, "relations", None)
         return {
+            "ref": self._serialize_node_ref(node),
             "node_id": getattr(node, "node_id", None),
             "kind": getattr(node, "kind", None),
             "page_number": getattr(node, "page_number", None),
@@ -488,6 +522,13 @@ class CodexToolRegistry:
                 }
                 for relation in (tuple(relation_getter()) if callable(relation_getter) else ())
             ],
+        }
+
+    def _serialize_node_ref(self, node: Any) -> dict[str, Any]:
+        return {
+            "node_id": getattr(node, "node_id", None),
+            "kind": getattr(node, "kind", None),
+            "page_number": getattr(node, "page_number", None),
         }
 
     def _serialize_structure_slice(self, structure: NodeStructureSlice) -> dict[str, Any]:
@@ -514,6 +555,11 @@ class CodexToolRegistry:
 
     def _serialize_search_hit(self, hit: TextSearchHit) -> dict[str, Any]:
         return {
+            "node_ref": {
+                "node_id": hit.node_id,
+                "kind": hit.node_kind,
+                "page_number": hit.page_number,
+            },
             "node_id": hit.node_id,
             "node_kind": hit.node_kind,
             "page_number": hit.page_number,
@@ -529,6 +575,11 @@ class CodexToolRegistry:
         return {
             "relation_id": hit.relation_id,
             "source_node_id": hit.source_node_id,
+            "target_node_ref": {
+                "node_id": hit.target_node_id,
+                "kind": hit.target_kind,
+                "page_number": hit.target_page_number,
+            },
             "target_node_id": hit.target_node_id,
             "target_kind": hit.target_kind,
             "target_page_number": hit.target_page_number,
