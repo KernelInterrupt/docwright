@@ -33,11 +33,13 @@ _STRUCTURAL_KINDS = {"document", "section", "heading", "chapter", "subsection", 
 
 
 @dataclass(slots=True)
-class RuntimeNodeView:
-    """Session-aware runtime node wrapper.
+class NodeRef:
+    """Session-aware runtime node reference.
 
-    It preserves document query behavior while exposing Core-owned actions on the
-    current runtime step.
+    A ``NodeRef`` is bound to one concrete runtime-visible node. It preserves
+    document query behavior while exposing Core-owned node-level actions without
+    requiring callers to treat the current runtime cursor as the only node entry
+    surface.
     """
 
     session: RuntimeSession
@@ -69,8 +71,38 @@ class RuntimeNodeView:
             return tuple(relation_getter())
         return ()
 
+    def context(self, *, before: int = 1, after: int = 1) -> NodeContextSlice:
+        return self.session.get_context(node_id=self.node_id, before=before, after=after)
+
+    def structure(self) -> NodeStructureSlice:
+        return self.session.get_structure(node_id=self.node_id)
+
+    def list_internal_links(self) -> tuple[InternalLinkHit, ...]:
+        return self.session.list_internal_links(node_id=self.node_id)
+
+    def follow_internal_link(self, relation_id: str) -> NodeRef | None:
+        return self.session.follow_internal_link(relation_id, node_id=self.node_id)
+
+    def parent(self) -> NodeRef | None:
+        parent_id = self.session._get_parent_id(self.node_id)
+        if parent_id is None:
+            return None
+        return self.session.node(parent_id)
+
+    def children(self) -> tuple[NodeRef, ...]:
+        return tuple(self.session.node(child_id) for child_id in self.session._get_child_ids(self.node_id))
+
+    def siblings(self) -> tuple[NodeRef, ...]:
+        return tuple(self.session.node(sibling_id) for sibling_id in self.session._get_sibling_ids(self.node_id))
+
+    def ancestry(self, *, include_self: bool = False) -> tuple[NodeRef, ...]:
+        return tuple(
+            self.session.node(ancestor_id)
+            for ancestor_id in self.session._get_ancestry(self.node_id, include_self=include_self)
+        )
+
     def highlight(self, *, level: str, reason: str | None = None) -> RuntimeEventEnvelope:
-        return self.session.record_highlight(level=level, reason=reason)
+        return self.session.record_highlight(node_id=self.node_id, level=level, reason=reason)
 
     def warning(
         self,
@@ -81,6 +113,7 @@ class RuntimeNodeView:
         evidence: tuple[str, ...] = (),
     ) -> RuntimeEventEnvelope:
         return self.session.record_warning(
+            node_id=self.node_id,
             kind=kind,
             severity=severity,
             message=message,
@@ -102,6 +135,7 @@ class RuntimeNodeView:
         compiler_profile: str | None = None,
     ) -> WorkspaceSession:
         return self.session.open_workspace(
+            node_id=self.node_id,
             task=task,
             capability=capability,
             language=language,
@@ -113,6 +147,10 @@ class RuntimeNodeView:
             body_kind=body_kind,
             compiler_profile=compiler_profile,
         )
+
+
+# Backward-compatibility alias for the pre-NodeRef public name.
+RuntimeNodeView = NodeRef
 
 
 class RuntimeSession:
@@ -204,25 +242,36 @@ class RuntimeSession:
         self._model.touch()
         return envelope
 
-    def current_node(self) -> RuntimeNodeView | None:
+    def node(self, node_id: str) -> NodeRef:
+        """Return a runtime node reference for an explicit node id."""
+
+        return NodeRef(session=self, raw_node=self._get_node(node_id))
+
+    def current_node(self) -> NodeRef | None:
         node_id = self._model.step.node_id
         if node_id is None:
             return None
-        return RuntimeNodeView(session=self, raw_node=self._get_node(node_id))
+        return self.node(node_id)
 
-    def get_context(self, *, before: int = 1, after: int = 1) -> NodeContextSlice:
-        node_id = self._model.step.node_id
-        if node_id is None:
+    def get_context(self, *, node_id: str | None = None, before: int = 1, after: int = 1) -> NodeContextSlice:
+        focus_node_id = node_id or self._model.step.node_id
+        if focus_node_id is None:
             return NodeContextSlice(focus_node_id="", before_node_ids=(), after_node_ids=())
+
+        reading_order = self._get_reading_order()
+        context_node_id = focus_node_id
+        if context_node_id not in reading_order:
+            resolved_focus_id = self._resolve_focusable_node_id(context_node_id)
+            if resolved_focus_id is not None:
+                context_node_id = resolved_focus_id
 
         get_context = getattr(self._document, "get_context", None)
         if callable(get_context):
-            return get_context(node_id, before=before, after=after)
+            return get_context(context_node_id, before=before, after=after)
 
-        reading_order = self._get_reading_order()
-        index = reading_order.index(node_id)
+        index = reading_order.index(context_node_id)
         return NodeContextSlice(
-            focus_node_id=node_id,
+            focus_node_id=context_node_id,
             before_node_ids=tuple(reading_order[max(0, index - before) : index]),
             after_node_ids=tuple(reading_order[index + 1 : index + 1 + after]),
         )
@@ -354,7 +403,9 @@ class RuntimeSession:
             )
         return tuple(hits)
 
-    def jump_to_node(self, node_id: str) -> RuntimeNodeView | None:
+    def jump_to_node(self, node_id: str) -> NodeRef | None:
+        """Compatibility helper that updates the runtime-selected node."""
+
         self._permissions.ensure_allowed("jump")
         resolved_focus_id = self._resolve_focusable_node_id(node_id)
         if resolved_focus_id is None:
@@ -362,9 +413,7 @@ class RuntimeSession:
         if self._model.step.node_id == resolved_focus_id:
             return self.current_node()
 
-        index = self._get_reading_order().index(resolved_focus_id)
-        self._model.step.enter_node(index=index, node_id=resolved_focus_id)
-        self._model.status = RuntimeSessionStatus.ACTIVE
+        target = self._select_node(resolved_focus_id)
         self.emit_event(
             EventName(EventFamily.NODE, "jumped"),
             {
@@ -373,9 +422,9 @@ class RuntimeSession:
             },
         )
         self.emit_event(EventName(EventFamily.NODE, "entered"))
-        return self.current_node()
+        return target
 
-    def follow_internal_link(self, relation_id: str, *, node_id: str | None = None) -> RuntimeNodeView | None:
+    def follow_internal_link(self, relation_id: str, *, node_id: str | None = None) -> NodeRef | None:
         focus_node_id = node_id or self._model.step.node_id
         if focus_node_id is None:
             raise KeyError("no current node is active")
@@ -395,37 +444,58 @@ class RuntimeSession:
             return target
         raise KeyError(f"internal link '{relation_id}' was not found for node '{focus_node_id}'")
 
-    def record_highlight(self, *, level: str, reason: str | None = None) -> RuntimeEventEnvelope:
+    def record_highlight(
+        self,
+        *,
+        node_id: str | None = None,
+        level: str,
+        reason: str | None = None,
+    ) -> RuntimeEventEnvelope:
         self._permissions.ensure_allowed("highlight")
-        self._model.step.highlight_count += 1
+        target_node_id = node_id or self._model.step.node_id
+        if target_node_id is None:
+            raise KeyError("no node is available for highlight")
+        if self._model.step.node_id == target_node_id:
+            self._model.step.highlight_count += 1
         payload: dict[str, Any] = {"level": level}
         if reason is not None:
             payload["reason"] = reason
+        if target_node_id != self._model.step.node_id:
+            payload["target_node_id"] = target_node_id
         return self.emit_event(EventName(EventFamily.HIGHLIGHT, "applied"), payload)
 
     def record_warning(
         self,
         *,
+        node_id: str | None = None,
         kind: str,
         severity: str,
         message: str,
         evidence: tuple[str, ...] = (),
     ) -> RuntimeEventEnvelope:
         self._permissions.ensure_allowed("warning")
-        self._model.step.warning_count += 1
+        target_node_id = node_id or self._model.step.node_id
+        if target_node_id is None:
+            raise KeyError("no node is available for warning")
+        if self._model.step.node_id == target_node_id:
+            self._model.step.warning_count += 1
+        payload = {
+            "kind": kind,
+            "severity": severity,
+            "message": message,
+            "evidence": list(evidence),
+        }
+        if target_node_id != self._model.step.node_id:
+            payload["target_node_id"] = target_node_id
         return self.emit_event(
             EventName(EventFamily.WARNING, "raised"),
-            {
-                "kind": kind,
-                "severity": severity,
-                "message": message,
-                "evidence": list(evidence),
-            },
+            payload,
         )
 
     def open_workspace(
         self,
         *,
+        node_id: str | None = None,
         task: str,
         capability: str | None = None,
         language: str | None = None,
@@ -449,6 +519,8 @@ class RuntimeSession:
         locked_sections: tuple[str, ...] = ()
         model_summary = ""
         resolved_sandbox_profile: str | None = None
+
+        target_node = self.current_node() if node_id is None else self.node(node_id)
 
         if workspace_profile is not None:
             if self._workspace_registry is None:
@@ -490,7 +562,7 @@ class RuntimeSession:
             resolved_editable_region = resolved_template.default_region_spec().as_runtime_region()
 
         workspace_id = f"ws-{uuid4()}"
-        self.record_workspace_opened(workspace_id=workspace_id, task=task)
+        self.record_workspace_opened(workspace_id=workspace_id, task=task, node_id=node_id)
 
         workspace = WorkspaceSession(
             WorkspaceSessionModel(
@@ -512,8 +584,8 @@ class RuntimeSession:
                     initial_body
                     if initial_body is not None
                     else (
-                        node.text_content()
-                        if node and node.text_content() is not None
+                        target_node.text_content()
+                        if target_node and target_node.text_content() is not None
                         else (resolved_template.default_body() if resolved_template is not None else "")
                     )
                 ),
@@ -536,10 +608,23 @@ class RuntimeSession:
     def workspace(self, workspace_id: str) -> WorkspaceSession:
         return self._workspaces[workspace_id]
 
-    def record_workspace_opened(self, *, workspace_id: str, task: str) -> RuntimeEventEnvelope:
+    def record_workspace_opened(
+        self,
+        *,
+        workspace_id: str,
+        task: str,
+        node_id: str | None = None,
+    ) -> RuntimeEventEnvelope:
         self._permissions.ensure_allowed("open_workspace")
+        target_node_id = node_id or self._model.step.node_id
+        if target_node_id is None:
+            raise KeyError("no node is available for workspace open")
         max_workspaces = self._guardrail_policy.max_workspaces_per_step
-        if max_workspaces is not None and self._model.step.workspace_open_count >= max_workspaces:
+        if (
+            target_node_id == self._model.step.node_id
+            and max_workspaces is not None
+            and self._model.step.workspace_open_count >= max_workspaces
+        ):
             raise GuardrailViolationError(
                 GuardrailViolation(
                     code=GuardrailCode.WORKSPACE_LIMIT_REACHED,
@@ -552,15 +637,19 @@ class RuntimeSession:
                 )
             )
 
-        self._model.step.workspace_open_count += 1
-        self._model.step.workspace_opened = True
+        if target_node_id == self._model.step.node_id:
+            self._model.step.workspace_open_count += 1
+            self._model.step.workspace_opened = True
+        payload = {"workspace_id": workspace_id, "task": task}
+        if target_node_id != self._model.step.node_id:
+            payload["target_node_id"] = target_node_id
         return self.emit_event(
             EventName(EventFamily.WORKSPACE, "opened"),
-            {"workspace_id": workspace_id, "task": task},
+            payload,
             workspace_id=workspace_id,
         )
 
-    def advance(self) -> RuntimeNodeView | None:
+    def advance(self) -> NodeRef | None:
         self._permissions.ensure_allowed("advance")
         if (
             self._guardrail_policy.require_highlight_before_advance
@@ -585,14 +674,14 @@ class RuntimeSession:
             return None
 
         next_node_id = reading_order[next_index]
-        self._model.step.enter_node(index=next_index, node_id=next_node_id)
+        self._select_node(next_node_id, index=next_index)
         self.emit_event(EventName(EventFamily.NODE, "entered"))
         return self.current_node()
 
     def _initialize_step(self) -> None:
         reading_order = self._get_reading_order()
         if reading_order and self._model.step.node_id is None:
-            self._model.step.enter_node(index=0, node_id=reading_order[0])
+            self._select_node(reading_order[0], index=0)
 
     def _candidate_node_ids_for_scope(self, scope: str) -> tuple[str, ...]:
         if scope == "document":
@@ -699,6 +788,12 @@ class RuntimeSession:
         if reading_order is None:
             return ()
         return tuple(reading_order)
+
+    def _select_node(self, node_id: str, *, index: int | None = None) -> NodeRef:
+        resolved_index = self._get_reading_order().index(node_id) if index is None else index
+        self._model.step.enter_node(index=resolved_index, node_id=node_id)
+        self._model.status = RuntimeSessionStatus.ACTIVE
+        return self.node(node_id)
 
     def _get_node(self, node_id: str) -> object:
         getter = getattr(self._document, "get_node", None)

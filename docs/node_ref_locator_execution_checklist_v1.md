@@ -32,10 +32,10 @@ Scope:
 - [x] align top-level integration docs so the runtime is described as target/node-reference-centered rather than cursor-centered
 
 ## L2. Core session object migration
-- [ ] refactor the current node view object into a general `NodeRef`-style runtime object rather than a current-node-only helper
-- [ ] add session-level APIs that return explicit node refs directly for node lookup and structural targeting
-- [ ] remove the need for public runtime consumers to act through an implicit global current node
-- [ ] keep any temporary node-selection helper internal or compatibility-scoped rather than the new public center
+- [x] refactor the current node view object into a general `NodeRef`-style runtime object rather than a current-node-only helper
+- [x] add session-level APIs that return explicit node refs directly for node lookup and structural targeting
+- [x] remove the need for public runtime consumers to act through an implicit global current node
+- [x] keep any temporary node-selection helper internal or compatibility-scoped rather than the new public center
 
 ## L3. Tool surface migration
 - [ ] redesign navigation tools so node-level reads/actions operate on explicit node references or node-targeted arguments

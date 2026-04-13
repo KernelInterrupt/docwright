@@ -9,7 +9,7 @@ from docwright.core.guardrails import (
     RuntimePermissions,
 )
 from docwright.core.models import RuntimeSessionModel, RuntimeSessionStatus
-from docwright.core.session import RuntimeNodeView, RuntimeSession
+from docwright.core.session import NodeRef, RuntimeNodeView, RuntimeSession
 from docwright.document.interfaces import NodeContextSlice, NodeRelationRef, TextSearchHit
 from docwright.workspace.profiles import WorkspaceProfile
 from docwright.workspace.registry import WorkspaceProfileRegistry
@@ -262,6 +262,25 @@ def test_runtime_session_current_node_returns_runtime_node_view() -> None:
     assert node.text_content() == "text for node-1"
 
 
+def test_runtime_session_can_return_explicit_node_refs_outside_current_node() -> None:
+    session = RuntimeSession(
+        RuntimeSessionModel(session_id="session-1", run_id="run-1", document_id="doc-1"),
+        document=DummyDocument(),
+    )
+
+    node = session.node("sec-2")
+
+    assert isinstance(node, NodeRef)
+    assert isinstance(node, RuntimeNodeView)
+    assert node.node_id == "sec-2"
+    assert node.text_content() == "Device B"
+    assert node.context().focus_node_id == "node-2"
+    assert node.structure().child_node_ids == ("node-2",)
+    assert [child.node_id for child in node.children()] == ["node-2"]
+    assert [ancestor.node_id for ancestor in node.ancestry(include_self=True)] == ["root", "sec-2"]
+    assert node.list_internal_links() == ()
+
+
 def test_runtime_session_get_context_uses_document_context_surface() -> None:
     session = RuntimeSession(
         RuntimeSessionModel(session_id="session-1", run_id="run-1", document_id="doc-1"),
@@ -339,6 +358,46 @@ def test_runtime_session_record_highlight_updates_step_and_emits_event() -> None
     assert session.model.step.highlight_count == 1
     assert event.as_protocol_event().event_name == "highlight.applied"
     assert event.as_protocol_event().payload["reason"] == "key claim"
+
+
+def test_node_ref_actions_can_target_non_current_nodes_explicitly() -> None:
+    session = RuntimeSession(
+        RuntimeSessionModel(session_id="session-1", run_id="run-1", document_id="doc-1"),
+        document=DummyDocument(),
+        workspace_registry=make_workspace_registry(),
+    )
+
+    node = session.node("node-2")
+    highlight_event = node.highlight(level="important", reason="explicit target")
+    warning_event = node.warning(
+        kind="cross_reference",
+        severity="medium",
+        message="inspect this figure",
+    )
+    workspace = node.open_workspace(task="annotation", workspace_profile="latex_annotation")
+
+    assert session.model.step.node_id == "node-1"
+    assert session.model.step.highlight_count == 0
+    assert highlight_event.as_protocol_event().payload["target_node_id"] == "node-2"
+    assert warning_event.as_protocol_event().payload["target_node_id"] == "node-2"
+    assert workspace.read_body() == "text for node-2"
+
+
+def test_node_ref_can_follow_internal_links_without_using_current_node_lookup() -> None:
+    session = RuntimeSession(
+        RuntimeSessionModel(session_id="session-1", run_id="run-1", document_id="doc-1"),
+        document=DummyDocument(),
+    )
+
+    source = session.node("node-1")
+    links = source.list_internal_links()
+    target = source.follow_internal_link("rel-link-1")
+
+    assert links[0].target_node_id == "sec-2"
+    assert target is not None
+    assert target.node_id == "node-2"
+    assert session.model.step.node_id == "node-2"
+    assert session.events()[-1].as_protocol_event().event_name == "node.internal_link_followed"
 
 
 def test_runtime_session_record_workspace_opened_updates_step_and_emits_event() -> None:
